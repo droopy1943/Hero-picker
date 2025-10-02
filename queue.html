@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hero Queue Manager</title>
+</head>
+<body>
+  <h1>Queue Manager</h1>
+  <input id="heroName" placeholder="Hero name">
+  <input id="heroImage" placeholder="Image URL">
+  <button onclick="addHero()">Add Hero</button>
+  <button onclick="nextHero()">Next Hero</button>
+
+  <ul id="queueList"></ul>
+
+  <script>
+    async function getQueue() {
+      const response = await fetch("queue.json?_=" + new Date().getTime());
+      return await response.json();
+    }
+
+    async function saveQueue(queue) {
+      await fetch("https://api.github.com/repos/YOURNAME/YOURREPO/contents/queue.json", {
+        method: "PUT",
+        headers: {
+          "Authorization": "token YOUR_GITHUB_TOKEN",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: "Update queue",
+          content: btoa(unescape(encodeURIComponent(JSON.stringify(queue, null, 2)))),
+          sha: window.currentSha
+        })
+      });
+    }
+
+    async function refreshQueue() {
+      const queue = await getQueue();
+      const list = document.getElementById("queueList");
+      list.innerHTML = "";
+      queue.forEach(q => {
+        const li = document.createElement("li");
+        li.textContent = q.name;
+        list.appendChild(li);
+      });
+    }
+
+    async function addHero() {
+      const name = document.getElementById("heroName").value;
+      const image = document.getElementById("heroImage").value;
+
+      const queue = await getQueue();
+      queue.push({ name, image });
+      await saveQueue(queue);
+      refreshQueue();
+    }
+
+    async function nextHero() {
+      const queue = await getQueue();
+      queue.shift(); 
+      await saveQueue(queue);
+      refreshQueue();
+    }
+
+    refreshQueue();
+  </script>
+</body>
+</html>
