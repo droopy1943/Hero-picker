@@ -95,6 +95,10 @@
       const message = encodeURIComponent(`I want to request ${hero}`);
       const tipUrl = `https://streamlabs.com/droopy2/tip?amount=${amount}&message=${message}`;
       window.open(tipUrl, "_blank");
+      // Add the hero to the overlay queue
+let queue = JSON.parse(localStorage.getItem("heroQueue") || "[]");
+queue.push(hero);
+localStorage.setItem("heroQueue", JSON.stringify(queue));
     });
   </script>
 </body>
