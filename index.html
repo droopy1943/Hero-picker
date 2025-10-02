@@ -1,105 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Marvel Rivals Hero Request</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-    h1 {
-      color: #ffcc00;
-      margin-bottom: 20px;
-    }
-    select, button {
-      font-size: 1rem;
-      margin: 10px 0;
-      padding: 5px 10px;
-    }
-    button {
-      background: #ffcc00;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    button:hover {
-      background: #ffaa00;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Marvel Rivals Hero Request</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+  }
+  h1 { color: #ffcc00; margin-bottom: 20px; }
+  select, button { font-size: 1rem; margin: 10px 0; padding: 5px 10px; }
+  button {
+    background: #ffcc00;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  button:hover { background: #ffaa00; }
+
+  /* Add images to dropdown options */
+  option {
+    background-repeat: no-repeat;
+    background-size: 20px 20px;
+    padding-left: 25px;
+  }
+</style>
 </head>
 <body>
-  <h1>Pick Your Hero!</h1>
-  <label for="heroSelect">Select a hero:</label>
-  <select id="heroSelect">
-    <option value="Adam Warlock">Adam Warlock</option>
-    <option value="Angela">Angela</option>
-    <option value="Black Panther">Black Panther</option>
-    <option value="Black Widow">Black Widow</option>
-    <option value="Blade">Blade</option>
-    <option value="Captain America">Captain America</option>
-    <option value="Cloak & Dagger">Cloak & Dagger</option>
-    <option value="Doctor Strange">Doctor Strange</option>
-    <option value="Emma Frost">Emma Frost</option>
-    <option value="Groot">Groot</option>
-    <option value="Hawkeye">Hawkeye</option>
-    <option value="Hela">Hela</option>
-    <option value="Hulk">Hulk</option>
-    <option value="Human Torch">Human Torch</option>
-    <option value="Invisible Woman">Invisible Woman</option>
-    <option value="Iron Fist">Iron Fist</option>
-    <option value="Iron Man">Iron Man</option>
-    <option value="Jeff the Land Shark">Jeff the Land Shark</option>
-    <option value="Loki">Loki</option>
-    <option value="Luna Snow">Luna Snow</option>
-    <option value="Magik">Magik</option>
-    <option value="Magneto">Magneto</option>
-    <option value="Mantis">Mantis</option>
-    <option value="Mister Fantastic">Mister Fantastic</option>
-    <option value="Moon Knight">Moon Knight</option>
-    <option value="Namor">Namor</option>
-    <option value="Peni Parker">Peni Parker</option>
-    <option value="Phoenix">Phoenix</option>
-    <option value="Psylocke">Psylocke</option>
-    <option value="The Punisher">The Punisher</option>
-    <option value="The Thing">The Thing</option>
-    <option value="Rocket Raccoon">Rocket Raccoon</option>
-    <option value="Scarlet Witch">Scarlet Witch</option>
-    <option value="Squirrel Girl">Squirrel Girl</option>
-    <option value="Spider-Man">Spider-Man</option>
-    <option value="Star-Lord">Star-Lord</option>
-    <option value="Storm">Storm</option>
-    <option value="Thor">Thor</option>
-    <option value="Ultron">Ultron</option>
-    <option value="Venom">Venom</option>
-    <option value="Winter Soldier">Winter Soldier</option>
-    <option value="Wolverine">Wolverine</option>
-  </select>
-  <br>
-  <button id="donateBtn">Donate $5 & Request</button>
+<h1>Pick Your Hero!</h1>
+<label for="heroSelect">Select a hero:</label>
+<select id="heroSelect"></select>
+<br>
+<button id="donateBtn">Donate $5 & Request</button>
 
-  <script>
-    const heroSelect = document.getElementById("heroSelect");
-    const donateBtn = document.getElementById("donateBtn");
+<script>
+// Hero names and GitHub image URLs
+const characters = {
+  "Adam Warlock": "https://github.com/droopy1943/Hero-picker/blob/main/images/Adam%20Warlock.png?raw=true",
+  "Angela": "https://github.com/droopy1943/Hero-picker/blob/main/images/Angela.png?raw=true",
+  "Black Panther": "https://github.com/droopy1943/Hero-picker/blob/main/images/Black%20Panther.png?raw=true",
+  "Black Widow": "https://github.com/droopy1943/Hero-picker/blob/main/images/Black%20Widow.png?raw=true",
+  "Blade": "https://github.com/droopy1943/Hero-picker/blob/main/images/Blade.png?raw=true",
+  "Captain America": "https://github.com/droopy1943/Hero-picker/blob/main/images/Captain%20America.png?raw=true",
+  "Cloak & Dagger": "https://github.com/droopy1943/Hero-picker/blob/main/images/Cloak%20%26%20Dagger.png?raw=true",
+  "Doctor Strange": "https://github.com/droopy1943/Hero-picker/blob/main/images/Doctor%20Strange.png?raw=true",
+  "Emma Frost": "https://github.com/droopy1943/Hero-picker/blob/main/images/Emma%20Frost.png?raw=true",
+  "Groot": "https://github.com/droopy1943/Hero-picker/blob/main/images/Groot.png?raw=true",
+  "Hawkeye": "https://github.com/droopy1943/Hero-picker/blob/main/images/Hawkeye.png?raw=true",
+  "Hela": "https://github.com/droopy1943/Hero-picker/blob/main/images/Hela.png?raw=true",
+  "Hulk": "https://github.com/droopy1943/Hero-picker/blob/main/images/Hulk.png?raw=true",
+  "Human Torch": "https://github.com/droopy1943/Hero-picker/blob/main/images/Human%20Torch.png?raw=true",
+  "Invisible Woman": "https://github.com/droopy1943/Hero-picker/blob/main/images/Invisible%20Woman.png?raw=true",
+  "Iron Fist": "https://github.com/droopy1943/Hero-picker/blob/main/images/Iron%20Fist.png?raw=true",
+  "Iron Man": "https://github.com/droopy1943/Hero-picker/blob/main/images/Iron%20Man.png?raw=true",
+  "Jeff the Land Shark": "https://github.com/droopy1943/Hero-picker/blob/main/images/Jeff%20the%20Land%20Shark.png?raw=true",
+  "Loki": "https://github.com/droopy1943/Hero-picker/blob/main/images/Loki.png?raw=true",
+  "Luna Snow": "https://github.com/droopy1943/Hero-picker/blob/main/images/Luna%20Snow.png?raw=true",
+  "Magik": "https://github.com/droopy1943/Hero-picker/blob/main/images/Magik.png?raw=true",
+  "Magneto": "https://github.com/droopy1943/Hero-picker/blob/main/images/Magneto.png?raw=true",
+  "Mantis": "https://github.com/droopy1943/Hero-picker/blob/main/images/Mantis.png?raw=true",
+  "Mister Fantastic": "https://github.com/droopy1943/Hero-picker/blob/main/images/Mister%20Fantastic.png?raw=true",
+  "Moon Knight": "https://github.com/droopy1943/Hero-picker/blob/main/images/Moon%20Knight.png?raw=true",
+  "Namor": "https://github.com/droopy1943/Hero-picker/blob/main/images/Namor.png?raw=true",
+  "Peni Parker": "https://github.com/droopy1943/Hero-picker/blob/main/images/Peni%20Parker.png?raw=true",
+  "Phoenix": "https://github.com/droopy1943/Hero-picker/blob/main/images/Phoenix.png?raw=true",
+  "Psylocke": "https://github.com/droopy1943/Hero-picker/blob/main/images/Psylocke.png?raw=true",
+  "The Punisher": "https://github.com/droopy1943/Hero-picker/blob/main/images/The%20Punisher.png?raw=true",
+  "The Thing": "https://github.com/droopy1943/Hero-picker/blob/main/images/The%20Thing.png?raw=true",
+  "Rocket Raccoon": "https://github.com/droopy1943/Hero-picker/blob/main/images/Rocket%20Raccoon.png?raw=true",
+  "Scarlet Witch": "https://github.com/droopy1943/Hero-picker/blob/main/images/Scarlet%20Witch.png?raw=true",
+  "Squirrel Girl": "https://github.com/droopy1943/Hero-picker/blob/main/images/Squirrel%20Girl.png?raw=true",
+  "Spider-Man": "https://github.com/droopy1943/Hero-picker/blob/main/images/Spider-Man.png?raw=true",
+  "Star-Lord": "https://github.com/droopy1943/Hero-picker/blob/main/images/Star-Lord.png?raw=true",
+  "Storm": "https://github.com/droopy1943/Hero-picker/blob/main/images/Storm.png?raw=true",
+  "Thor": "https://github.com/droopy1943/Hero-picker/blob/main/images/Thor.png?raw=true",
+  "Ultron": "https://github.com/droopy1943/Hero-picker/blob/main/images/Ultron.png?raw=true",
+  "Venom": "https://github.com/droopy1943/Hero-picker/blob/main/images/Venom.png?raw=true",
+  "Winter Soldier": "https://github.com/droopy1943/Hero-picker/blob/main/images/Winter%20Soldier.png?raw=true",
+  "Wolverine": "https://github.com/droopy1943/Hero-picker/blob/main/images/Wolverine.png?raw=true"
+};
 
-    donateBtn.addEventListener("click", () => {
-      const hero = heroSelect.value;
-      const amount = 5;
-      const message = encodeURIComponent(`I want to request ${hero}`);
-      const tipUrl = `https://streamlabs.com/droopy2/tip?amount=${amount}&message=${message}`;
-      window.open(tipUrl, "_blank");
-      // Add the hero to the overlay queue
-let queue = JSON.parse(localStorage.getItem("heroQueue") || "[]");
-queue.push(hero);
-localStorage.setItem("heroQueue", JSON.stringify(queue));
-    });
-  </script>
+// Populate dropdown with heroes
+const heroSelect = document.getElementById("heroSelect");
+Object.keys(characters).forEach(hero => {
+  const opt = document.createElement("option");
+  opt.value = hero;
+  opt.textContent = hero;
+  heroSelect.appendChild(opt);
+});
+
+// Donate button click
+const donateBtn = document.getElementById("donateBtn");
+donateBtn.addEventListener("click", () => {
+  const hero = heroSelect.value;
+  const amount = 5;
+  const message = encodeURIComponent(`I want to request ${hero}`);
+  const tipUrl = `https://droopy.tv/tip?amount=${amount}&message=${message}`;
+  window.open(tipUrl, "_blank");
+
+  // Add hero to local queue (overlay can read from this)
+  let queue = JSON.parse(localStorage.getItem("heroQueue") || "[]");
+  queue.push(hero);
+  localStorage.setItem("heroQueue", JSON.stringify(queue));
+});
+</script>
 </body>
 </html>
