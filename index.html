@@ -11,37 +11,53 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    height: 100vh;
+    justify-content: flex-start;
+    padding: 20px;
     margin: 0;
   }
-  h1 { color: #ffcc00; margin-bottom: 20px; }
-  select, button { font-size: 1rem; margin: 10px 0; padding: 5px 10px; }
-  button {
-    background: #ffcc00;
-    border: none;
-    cursor: pointer;
-    font-weight: bold;
+  h1 {
+    color: #ffcc00;
+    margin-bottom: 20px;
   }
-  button:hover { background: #ffaa00; }
 
-  /* Add images to dropdown options */
-  option {
-    background-repeat: no-repeat;
-    background-size: 20px 20px;
-    padding-left: 25px;
+  .hero-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+    width: 100%;
+    max-width: 900px;
+  }
+  .hero-card {
+    background: #222;
+    padding: 10px;
+    border: 2px solid #444;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .hero-card img {
+    max-width: 100%;
+    height: 100px;
+    object-fit: contain;
+  }
+  .hero-card span {
+    display: block;
+    margin-top: 5px;
+    color: #fff;
+    font-size: 14px;
+  }
+  .hero-card:hover {
+    border-color: #ffcc00;
+    transform: scale(1.05);
   }
 </style>
 </head>
 <body>
-<h1>Pick Your Hero!</h1>
-<label for="heroSelect">Select a hero:</label>
-<select id="heroSelect"></select>
-<br>
-<button id="donateBtn">Donate $5 & Request</button>
+  <h1>Pick Your Hero!</h1>
+  <div class="hero-grid" id="heroGrid"></div>
 
 <script>
-// Hero names and GitHub image URLs
+// Characters with their GitHub-hosted images
 const characters = {
   "Adam Warlock": "https://github.com/droopy1943/Hero-picker/blob/main/images/Adam%20Warlock.png?raw=true",
   "Angela": "https://github.com/droopy1943/Hero-picker/blob/main/images/Angela.png?raw=true",
@@ -87,29 +103,23 @@ const characters = {
   "Wolverine": "https://github.com/droopy1943/Hero-picker/blob/main/images/Wolverine.png?raw=true"
 };
 
-// Populate dropdown with heroes
-const heroSelect = document.getElementById("heroSelect");
-Object.keys(characters).forEach(hero => {
-  const opt = document.createElement("option");
-  opt.value = hero;
-  opt.textContent = hero;
-  heroSelect.appendChild(opt);
+// Build the grid
+const heroGrid = document.getElementById("heroGrid");
+Object.entries(characters).forEach(([name, url]) => {
+  const card = document.createElement("div");
+  card.className = "hero-card";
+  card.innerHTML = `<img src="${url}" alt="${name}"><span>${name}</span>`;
+  card.onclick = () => selectHero(name);
+  heroGrid.appendChild(card);
 });
 
-// Donate button click
-const donateBtn = document.getElementById("donateBtn");
-donateBtn.addEventListener("click", () => {
-  const hero = heroSelect.value;
+// Open donation link when hero selected
+function selectHero(hero) {
   const amount = 5;
   const message = encodeURIComponent(`I want to request ${hero}`);
   const tipUrl = `https://droopy.tv/tip?amount=${amount}&message=${message}`;
   window.open(tipUrl, "_blank");
-
-  // Add hero to local queue (overlay can read from this)
-  let queue = JSON.parse(localStorage.getItem("heroQueue") || "[]");
-  queue.push(hero);
-  localStorage.setItem("heroQueue", JSON.stringify(queue));
-});
+}
 </script>
 </body>
 </html>
