@@ -4,31 +4,133 @@
 <meta charset="UTF-8">
 <title>Marvel Rivals Hero Overlay</title>
 <style>
-  body { margin:0; background:transparent; overflow:hidden; }
-  .char-wrapper { width:420px; height:400px; position:relative; margin:auto; top:50%; transform:translateY(-50%);}
-  #charImg { width:114px; height:72px; object-fit:contain; display:block; margin:0 auto; position:relative; z-index:1; }
-  #borderImg { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:520px; height:355px; z-index:2; pointer-events:none; }
+  body {
+    margin: 0;
+    background: rgba(0,0,0,0);
+    overflow: hidden;
+  }
+
+  /* Overlay container centers everything */
+  .overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+  }
+
+  /* Wrapper for hero + border */
+  .char-wrapper {
+    position: relative;
+    display: inline-block;
+    width: calc(400px * 1.05);  
+    height: calc(250px * 1.05);  
+    margin: 0 auto;
+    overflow: visible;
+  }
+
+  /* Hero image */
+  #charImg {
+    display: block;
+    width: 100%;    
+    height: 100%;
+    object-fit: contain;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Border image */
+  #borderImg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-52%, -52%);
+    width: 135%;   
+    height: 138%;
+    z-index: 2;
+    pointer-events: none;
+  }
 </style>
 </head>
+
 <body>
-<div class="char-wrapper">
-  <img id="charImg" src="" alt="Hero Image">
-  <img id="borderImg" src="images/comic_border.png" alt="Border Image">
-</div>
+  <div class="overlay">
+    <div class="char-wrapper">
+      <img id="charImg" alt="Hero Image">
+      <img id="borderImg" src="images/comic_border.png" alt="Border Image">
+    </div>
+  </div>
 
-<script>
-const charImgEl = document.getElementById("charImg");
+  <script>
+    // Map hero names to image filenames
+    const characters = {
+      "Adam Warlock": "adamwarlock.png",
+      "Angela": "angela.png",
+      "Black Panther": "blackpanther.png",
+      "Black Widow": "Black Widow.png",
+      "Blade": "blade.png",
+      "Captain America": "captainamerica.png",
+      "Cloak & Dagger": "Cloak & Dagger.png",
+      "Doctor Strange": "doctorstrange.png",
+      "Emma Frost": "emmafrost.png",
+      "Groot": "groot.png",
+      "Hawkeye": "hawkeye.png",
+      "Hela": "hela.png",
+      "Hulk": "hulk.png",
+      "Human Torch": "humantorch.png",
+      "Invisible Woman": "Invisible Woman.png",
+      "Iron Fist": "Iron Fist.png",
+      "Iron Man": "ironman.png",
+      "Jeff the Land Shark": "Jeff the land shark.png",
+      "Loki": "Loki.png",
+      "Luna Snow": "Luna Snow.png",
+      "Magik": "Magik.png",
+      "Magneto": "magneto.png",
+      "Mantis": "Mantis.png",
+      "Mister Fantastic": "Mister Fantastic.png",
+      "Moon Knight": "Moon Knight.png",
+      "Namor": "Namor.png",
+      "Peni Parker": "Peni Parkerr.png",
+      "Phoenix": "Phoenix.png",
+      "Psylocke": "Psylocke.png",
+      "The Punisher": "The Punisher.png",
+      "The Thing": "The Thing.png",
+      "Rocket Raccoon": "Rocket Raccoon.png",
+      "Scarlet Witch": "Scarlet Witch.png",
+      "Squirrel Girl": "Squirrel Girl.png",
+      "Spider-Man": "spiderman.png",
+      "Star-Lord": "Star-Lord.png",
+      "Storm": "Storm.png",
+      "Thor": "thor.png",
+      "Ultron": "Ultron.png",
+      "Venom": "Venom.png",
+      "Winter Soldier": "Winterr Soldier.png",
+      "Wolverine": "Wolverine.png"
+    };
 
-// Reads the queue from localStorage and displays the next hero
-function updateOverlay() {
-  let queue = JSON.parse(localStorage.getItem("heroQueue") || "[]");
-  if(queue.length === 0) return;
-  const hero = queue[0]; // peek first hero
-  charImgEl.src = `images/${hero.toLowerCase().replace(/\s+/g,'')}.png`;
-}
+    const charImgEl = document.getElementById("charImg");
 
-// Update overlay every 1 second
-setInterval(updateOverlay, 1000);
-</script>
+    function newDonation(heroName) {
+      const heroKey = Object.keys(characters).find(
+        key => key.toLowerCase() === heroName.toLowerCase()
+      );
+      if(heroKey) {
+        charImgEl.src = `images/${characters[heroKey]}`;
+        charImgEl.style.display = "block";
+      } else {
+        console.log("Hero not found:", heroName);
+        charImgEl.style.display = "none";
+      }
+    }
+
+    // ✅ Listen for queue.html sending the next hero
+    window.addEventListener("message", (event) => {
+      if(event.data.hero) {
+        console.log("Overlay received hero:", event.data.hero);
+        newDonation(event.data.hero);
+      }
+    });
+
+    window.newDonation = newDonation;
+  </script>
 </body>
 </html>
