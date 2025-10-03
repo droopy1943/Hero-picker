@@ -52,7 +52,7 @@
     }
   </style>
 
-  <!-- Firebase (compat build for simple script-tag usage) -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
@@ -61,7 +61,6 @@
   <div class="grid" id="heroGrid"></div>
 
   <script>
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
       authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
@@ -74,7 +73,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Heroes (adjust filenames to match exact GitHub capitalization + spaces)
     const heroes = [
       { name: "Adam Warlock", img: "images/Adam Warlock.png" },
       { name: "Angela", img: "images/Angela.png" },
@@ -129,13 +127,11 @@
         <div class="hero-name">${hero.name}</div>
       `;
       card.onclick = () => {
-        // Push to Firebase
         db.ref("queue").push({
           hero: hero.name,
           timestamp: Date.now()
         });
 
-        // Redirect to Streamlabs
         const message = encodeURIComponent(`I want to request ${hero.name}`);
         const tipUrl = `https://streamlabs.com/droopy2/tip?amount=5&message=${message}`;
         window.open(tipUrl, "_blank");
