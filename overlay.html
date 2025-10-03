@@ -11,21 +11,23 @@
       font-family: "Comic Sans MS", "Comic Sans", cursive;
       color: white;
     }
+    /* Fullscreen frame image */
     .frame {
       position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      top: 0; 
+      left: 0;
+      width: 100%; 
+      height: 100%;
       pointer-events: none;
-      box-sizing: border-box;
-      border: 20px solid #ff0000;
-      /* 🔥 IMPORTANT: use GitHub-hosted border PNG instead of local */
-      border-image: url('https://raw.githubusercontent.com/droopy1943/Hero-picker/main/images/comic_border.png') 40 round;
+      z-index: 10; /* sits on top of everything */
     }
     .container {
       position: absolute;
-      top: 50%; left: 50%;
+      top: 50%; 
+      left: 50%;
       transform: translate(-50%, -50%);
       text-align: center;
+      z-index: 5; /* under the frame */
     }
     .character-img {
       width: 300px;
@@ -50,7 +52,9 @@
   </style>
 </head>
 <body>
-  <div class="frame"></div>
+  <!-- Border frame as a PNG -->
+  <img class="frame" src="images/comic_border.png" alt="Border" />
+
   <div class="container">
     <img id="charImg" class="character-img" src="" alt="" />
     <div id="godName" class="god-name">Waiting for pick...</div>
@@ -58,14 +62,14 @@
   </div>
 
   <script>
-    // List of characters and their GitHub image links
+    // List of characters and their image filenames
     const characters = {
-      "Iron Man": "https://raw.githubusercontent.com/droopy1943/Hero-picker/main/images/Iron%20Man.png",
-      "Thor": "https://raw.githubusercontent.com/droopy1943/Hero-picker/main/images/Thor.png",
-      "Spider-Man": "https://raw.githubusercontent.com/droopy1943/Hero-picker/main/images/Spider-Man.png",
-      "Magneto": "https://raw.githubusercontent.com/droopy1943/Hero-picker/main/images/Magneto.png",
-      "Hawkeye": "https://raw.githubusercontent.com/droopy1943/Hero-picker/main/images/Hawkeye.png"
-      // 👉 keep expanding this list with the same naming format
+      "Iron Man": "ironman.png",
+      "Thor": "thor.png",
+      "Spider-Man": "spiderman.png",
+      "Magneto": "magneto.png",
+      "Hawkeye": "hawkeye.png",
+      // add more as needed
     };
 
     const godEl = document.getElementById("godName");
@@ -87,7 +91,7 @@
 
       const imgFile = characters[god];
       if (imgFile) {
-        charImgEl.src = imgFile;
+        charImgEl.src = `images/${imgFile}`;
         charImgEl.style.display = "block";
       } else {
         charImgEl.style.display = "none";
