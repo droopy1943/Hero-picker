@@ -1,148 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Marvel Rivals Hero Request</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #111;
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 20px;
-    margin: 0;
-  }
-  h1 {
-    color: #ffcc00;
-    margin-bottom: 10px;
-  }
-  #searchBar {
-    margin-bottom: 20px;
-    padding: 8px;
-    font-size: 16px;
-    width: 100%;
-    max-width: 400px;
-    border: 2px solid #444;
-    background: #222;
-    color: #fff;
-  }
-  .hero-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 15px;
-    width: 100%;
-    max-width: 900px;
-  }
-  .hero-card {
-    background: #222;
-    padding: 10px;
-    border: 2px solid #444;
-    text-align: center;
-    cursor: pointer;
-    transition: 0.2s;
-  }
-  .hero-card img {
-    max-width: 100%;
-    height: 100px;
-    object-fit: contain;
-  }
-  .hero-card span {
-    display: block;
-    margin-top: 5px;
-    color: #fff;
-    font-size: 14px;
-  }
-  .hero-card:hover {
-    border-color: #ffcc00;
-    transform: scale(1.05);
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>Marvel Rivals Hero Request</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      color: #ffcc00;
+      margin-bottom: 20px;
+    }
+    select, button {
+      font-size: 1rem;
+      margin: 10px 0;
+      padding: 5px 10px;
+    }
+    button {
+      background: #ffcc00;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #ffaa00;
+    }
+  </style>
 </head>
 <body>
   <h1>Pick Your Hero!</h1>
-  <input type="text" id="searchBar" placeholder="Search heroes...">
-  <div class="hero-grid" id="heroGrid"></div>
+  <label for="heroSelect">Select a hero:</label>
+  <select id="heroSelect">
+    <option value="Adam Warlock">Adam Warlock</option>
+    <option value="Angela">Angela</option>
+    <option value="Black Panther">Black Panther</option>
+    <option value="Black Widow">Black Widow</option>
+    <option value="Blade">Blade</option>
+    <option value="Captain America">Captain America</option>
+    <option value="Cloak & Dagger">Cloak & Dagger</option>
+    <option value="Doctor Strange">Doctor Strange</option>
+    <option value="Emma Frost">Emma Frost</option>
+    <option value="Groot">Groot</option>
+    <option value="Hawkeye">Hawkeye</option>
+    <option value="Hela">Hela</option>
+    <option value="Hulk">Hulk</option>
+    <option value="Human Torch">Human Torch</option>
+    <option value="Invisible Woman">Invisible Woman</option>
+    <option value="Iron Fist">Iron Fist</option>
+    <option value="Iron Man">Iron Man</option>
+    <option value="Jeff the Land Shark">Jeff the Land Shark</option>
+    <option value="Loki">Loki</option>
+    <option value="Luna Snow">Luna Snow</option>
+    <option value="Magik">Magik</option>
+    <option value="Magneto">Magneto</option>
+    <option value="Mantis">Mantis</option>
+    <option value="Mister Fantastic">Mister Fantastic</option>
+    <option value="Moon Knight">Moon Knight</option>
+    <option value="Namor">Namor</option>
+    <option value="Peni Parker">Peni Parker</option>
+    <option value="Phoenix">Phoenix</option>
+    <option value="Psylocke">Psylocke</option>
+    <option value="The Punisher">The Punisher</option>
+    <option value="The Thing">The Thing</option>
+    <option value="Rocket Raccoon">Rocket Raccoon</option>
+    <option value="Scarlet Witch">Scarlet Witch</option>
+    <option value="Squirrel Girl">Squirrel Girl</option>
+    <option value="Spider-Man">Spider-Man</option>
+    <option value="Star-Lord">Star-Lord</option>
+    <option value="Storm">Storm</option>
+    <option value="Thor">Thor</option>
+    <option value="Ultron">Ultron</option>
+    <option value="Venom">Venom</option>
+    <option value="Winter Soldier">Winter Soldier</option>
+    <option value="Wolverine">Wolverine</option>
+  </select>
+  <br>
+  <button id="donateBtn">Donate $5 & Request</button>
 
-<script>
-// Characters with reliable GitHub raw links
-const baseUrl = "https://raw.githubusercontent.com/droopy1943/Hero-picker/main/images/";
+  <script>
+    const heroSelect = document.getElementById("heroSelect");
+    const donateBtn = document.getElementById("donateBtn");
 
-const characters = {
-  "Adam Warlock": baseUrl + "Adam%20Warlock.png",
-  "Angela": baseUrl + "Angela.png",
-  "Black Panther": baseUrl + "Black%20Panther.png",
-  "Black Widow": baseUrl + "Black%20Widow.png",
-  "Blade": baseUrl + "Blade.png",
-  "Captain America": baseUrl + "Captain%20America.png",
-  "Cloak & Dagger": baseUrl + "Cloak%20%26%20Dagger.png",
-  "Doctor Strange": baseUrl + "Doctor%20Strange.png",
-  "Emma Frost": baseUrl + "Emma%20Frost.png",
-  "Groot": baseUrl + "Groot.png",
-  "Hawkeye": baseUrl + "Hawkeye.png",
-  "Hela": baseUrl + "Hela.png",
-  "Hulk": baseUrl + "Hulk.png",
-  "Human Torch": baseUrl + "Human%20Torch.png",
-  "Invisible Woman": baseUrl + "Invisible%20Woman.png",
-  "Iron Fist": baseUrl + "Iron%20Fist.png",
-  "Iron Man": baseUrl + "Iron%20Man.png",
-  "Jeff the Land Shark": baseUrl + "Jeff%20the%20Land%20Shark.png",
-  "Loki": baseUrl + "Loki.png",
-  "Luna Snow": baseUrl + "Luna%20Snow.png",
-  "Magik": baseUrl + "Magik.png",
-  "Magneto": baseUrl + "Magneto.png",
-  "Mantis": baseUrl + "Mantis.png",
-  "Mister Fantastic": baseUrl + "Mister%20Fantastic.png",
-  "Moon Knight": baseUrl + "Moon%20Knight.png",
-  "Namor": baseUrl + "Namor.png",
-  "Peni Parker": baseUrl + "Peni%20Parker.png",
-  "Phoenix": baseUrl + "Phoenix.png",
-  "Psylocke": baseUrl + "Psylocke.png",
-  "The Punisher": baseUrl + "The%20Punisher.png",
-  "The Thing": baseUrl + "The%20Thing.png",
-  "Rocket Raccoon": baseUrl + "Rocket%20Raccoon.png",
-  "Scarlet Witch": baseUrl + "Scarlet%20Witch.png",
-  "Squirrel Girl": baseUrl + "Squirrel%20Girl.png",
-  "Spider-Man": baseUrl + "Spider-Man.png",
-  "Star-Lord": baseUrl + "Star-Lord.png",
-  "Storm": baseUrl + "Storm.png",
-  "Thor": baseUrl + "Thor.png",
-  "Ultron": baseUrl + "Ultron.png",
-  "Venom": baseUrl + "Venom.png",
-  "Winter Soldier": baseUrl + "Winter%20Soldier.png",
-  "Wolverine": baseUrl + "Wolverine.png"
-};
+    donateBtn.addEventListener("click", () => {
+      const hero = heroSelect.value;
+      const amount = 5;
+      const message = encodeURIComponent(`I want to request ${hero}`);
 
-// Build hero grid
-const heroGrid = document.getElementById("heroGrid");
-function renderGrid(filter = "") {
-  heroGrid.innerHTML = "";
-  Object.entries(characters).forEach(([name, url]) => {
-    if (name.toLowerCase().includes(filter.toLowerCase())) {
-      const card = document.createElement("div");
-      card.className = "hero-card";
-      card.innerHTML = `<img src="${url}" alt="${name}"><span>${name}</span>`;
-      card.onclick = () => selectHero(name);
-      heroGrid.appendChild(card);
-    }
-  });
-}
-renderGrid();
+      // Save hero to local queue
+      let queue = JSON.parse(localStorage.getItem("heroQueue") || "[]");
+      queue.push(hero);
+      localStorage.setItem("heroQueue", JSON.stringify(queue));
 
-// Filter with search
-document.getElementById("searchBar").addEventListener("input", (e) => {
-  renderGrid(e.target.value);
-});
-
-// Open donation link when hero selected
-function selectHero(hero) {
-  const amount = 5;
-  const message = encodeURIComponent(`I want to request ${hero}`);
-  const tipUrl = `https://droopy.tv/tip?amount=${amount}&message=${message}`;
-  window.open(tipUrl, "_blank");
-}
-</script>
+      // Redirect to Streamlabs donation page with pre-filled info
+      const tipUrl = `https://streamlabs.com/droopy2/tip?amount=${amount}&message=${message}`;
+      window.open(tipUrl, "_blank");
+    });
+  </script>
 </body>
 </html>
