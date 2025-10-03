@@ -69,49 +69,49 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Full roster (filenames match your repo; spaces/& are URL-encoded where needed)
+    // Match EXACT file names from your GitHub images folder
     const heroes = [
-      { name: "Adam Warlock", img: "images/adamwarlock.png" },
-      { name: "Angela", img: "images/angela.png" },
-      { name: "Black Panther", img: "images/blackpanther.png" },
-      { name: "Black Widow", img: "images/Black%20Widow.png" },
-      { name: "Blade", img: "images/blade.png" },
-      { name: "Captain America", img: "images/captainamerica.png" },
-      { name: "Cloak & Dagger", img: "images/Cloak%20&%20Dagger.png" },
-      { name: "Doctor Strange", img: "images/doctorstrange.png" },
-      { name: "Emma Frost", img: "images/emmafrost.png" },
-      { name: "Groot", img: "images/groot.png" },
-      { name: "Hawkeye", img: "images/hawkeye.png" },
-      { name: "Hela", img: "images/hela.png" },
-      { name: "Hulk", img: "images/hulk.png" },
-      { name: "Human Torch", img: "images/humantorch.png" },
-      { name: "Invisible Woman", img: "images/Invisible%20Woman.png" },
-      { name: "Iron Fist", img: "images/Iron%20Fist.png" },
-      { name: "Iron Man", img: "images/ironman.png" },
-      { name: "Jeff the Land Shark", img: "images/Jeff%20the%20land%20shark.png" },
+      { name: "Adam Warlock", img: "images/Adam Warlock.png" },
+      { name: "Angela", img: "images/Angela.png" },
+      { name: "Black Panther", img: "images/Black Panther.png" },
+      { name: "Black Widow", img: "images/Black Widow.png" },
+      { name: "Blade", img: "images/Blade.png" },
+      { name: "Captain America", img: "images/Captain America.png" },
+      { name: "Cloak & Dagger", img: "images/Cloak & Dagger.png" },
+      { name: "Doctor Strange", img: "images/Doctor Strange.png" },
+      { name: "Emma Frost", img: "images/Emma Frost.png" },
+      { name: "Groot", img: "images/Groot.png" },
+      { name: "Hawkeye", img: "images/Hawkeye.png" },
+      { name: "Hela", img: "images/Hela.png" },
+      { name: "Hulk", img: "images/Hulk.png" },
+      { name: "Human Torch", img: "images/Human Torch.png" },
+      { name: "Invisible Woman", img: "images/Invisible Woman.png" },
+      { name: "Iron Fist", img: "images/Iron Fist.png" },
+      { name: "Iron Man", img: "images/Iron Man.png" },
+      { name: "Jeff the Land Shark", img: "images/Jeff the Land Shark.png" },
       { name: "Loki", img: "images/Loki.png" },
-      { name: "Luna Snow", img: "images/Luna%20Snow.png" },
+      { name: "Luna Snow", img: "images/Luna Snow.png" },
       { name: "Magik", img: "images/Magik.png" },
-      { name: "Magneto", img: "images/magneto.png" },
+      { name: "Magneto", img: "images/Magneto.png" },
       { name: "Mantis", img: "images/Mantis.png" },
-      { name: "Mister Fantastic", img: "images/Mister%20Fantastic.png" },
-      { name: "Moon Knight", img: "images/Moon%20Knight.png" },
+      { name: "Mister Fantastic", img: "images/Mister Fantastic.png" },
+      { name: "Moon Knight", img: "images/Moon Knight.png" },
       { name: "Namor", img: "images/Namor.png" },
-      { name: "Peni Parker", img: "images/Peni%20Parkerr.png" },
+      { name: "Peni Parker", img: "images/Peni Parker.png" },
       { name: "Phoenix", img: "images/Phoenix.png" },
       { name: "Psylocke", img: "images/Psylocke.png" },
-      { name: "The Punisher", img: "images/The%20Punisher.png" },
-      { name: "The Thing", img: "images/The%20Thing.png" },
-      { name: "Rocket Raccoon", img: "images/Rocket%20Raccoon.png" },
-      { name: "Scarlet Witch", img: "images/Scarlet%20Witch.png" },
-      { name: "Squirrel Girl", img: "images/Squirrel%20Girl.png" },
-      { name: "Spider-Man", img: "images/spiderman.png" },
+      { name: "The Punisher", img: "images/The Punisher.png" },
+      { name: "The Thing", img: "images/The Thing.png" },
+      { name: "Rocket Raccoon", img: "images/Rocket Raccoon.png" },
+      { name: "Scarlet Witch", img: "images/Scarlet Witch.png" },
+      { name: "Squirrel Girl", img: "images/Squirrel Girl.png" },
+      { name: "Spider-Man", img: "images/Spider-Man.png" },
       { name: "Star-Lord", img: "images/Star-Lord.png" },
       { name: "Storm", img: "images/Storm.png" },
-      { name: "Thor", img: "images/thor.png" },
+      { name: "Thor", img: "images/Thor.png" },
       { name: "Ultron", img: "images/Ultron.png" },
       { name: "Venom", img: "images/Venom.png" },
-      { name: "Winter Soldier", img: "images/Winterr%20Soldier.png" },
+      { name: "Winter Soldier", img: "images/Winter Soldier.png" },
       { name: "Wolverine", img: "images/Wolverine.png" }
     ];
 
@@ -125,13 +125,13 @@
         <div class="hero-name">${hero.name}</div>
       `;
       card.onclick = () => {
-        // 1) Push to Firebase queue (keeps in sync with queue.html)
+        // Push to Firebase
         db.ref("queue").push({
           hero: hero.name,
           timestamp: Date.now()
         });
 
-        // 2) Send to Streamlabs with prefilled message
+        // Send to Streamlabs with prefilled message
         const message = encodeURIComponent(`I want to request ${hero.name}`);
         const tipUrl = `https://streamlabs.com/droopy2/tip?amount=5&message=${message}`;
         window.open(tipUrl, "_blank");
