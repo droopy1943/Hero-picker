@@ -4,87 +4,58 @@
 <meta charset="UTF-8">
 <title>Hero Queue Manager</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; }
-  input { margin: 5px; width: 200px; }
-  button { margin: 5px; }
+  body { font-family: Arial, sans-serif; margin: 20px; background:#111; color:#fff; }
+  button { margin: 5px; padding:5px 10px; background:#ffcc00; border:none; cursor:pointer; font-weight:bold; }
+  button:hover { background:#ffaa00; }
+  ul { list-style:none; padding-left:0; }
+  li { margin:5px 0; }
 </style>
 </head>
 <body>
 <h1>Hero Queue Manager</h1>
 
-<input id="heroName" placeholder="Hero name">
-<input id="heroImage" placeholder="Image URL">
-<button onclick="addHero()">Add Hero</button>
+<button onclick="refreshQueue()">Refresh Queue</button>
 <button onclick="nextHero()">Next Hero</button>
 
 <h2>Current Queue:</h2>
 <ul id="queueList"></ul>
 
 <script>
-const repo = "YOUR_REPO_NAME";       // <-- put your repo name
-const user = "YOUR_GITHUB_USERNAME"; // <-- put your GitHub username
-const token = "YOUR_PERSONAL_ACCESS_TOKEN"; // <-- create a PAT with repo access
-const path = "queue.json";            // JSON file
+let overlayWindow = null;
 
-let currentSha = null; // needed to update GitHub file
-
-// Fetch the current queue
-async function getQueue() {
-  const resp = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${path}`);
-  const data = await resp.json();
-  currentSha = data.sha;
-  return JSON.parse(atob(data.content));
+// Get queue from localStorage
+function getQueue() {
+  return JSON.parse(localStorage.getItem("heroQueue") || "[]");
 }
 
-// Update queue.json on GitHub
-async function saveQueue(queue) {
-  await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${path}`, {
-    method: "PUT",
-    headers: {
-      "Authorization": `token ${token}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      message: "Update queue",
-      content: btoa(unescape(encodeURIComponent(JSON.stringify(queue, null, 2)))),
-      sha: currentSha
-    })
-  });
-  await refreshQueue();
+// Save queue to localStorage
+function saveQueue(queue) {
+  localStorage.setItem("heroQueue", JSON.stringify(queue));
 }
 
-// Refresh the visible list
-async function refreshQueue() {
-  const queue = await getQueue();
+// Refresh queue display
+function refreshQueue() {
+  const queue = getQueue();
   const list = document.getElementById("queueList");
-  list.innerHTML = "";
-  queue.forEach((q, i) => {
-    const li = document.createElement("li");
-    li.textContent = `${i+1}. ${q.name}`;
-    list.appendChild(li);
-  });
+  list.innerHTML = queue.map((q,i)=>`<li>${i+1}. ${q}</li>`).join("");
 }
 
-// Add a hero
-async function addHero() {
-  const name = document.getElementById("heroName").value.trim();
-  const image = document.getElementById("heroImage").value.trim();
-  if (!name || !image) return alert("Both fields required!");
-
-  const queue = await getQueue();
-  queue.push({ name, image });
-  await saveQueue(queue);
-
-  document.getElementById("heroName").value = "";
-  document.getElementById("heroImage").value = "";
+// Open overlay window if needed
+function openOverlay() {
+  if(!overlayWindow || overlayWindow.closed) {
+    overlayWindow = window.open("overlay.html", "Overlay", "width=800,height=600");
+  }
 }
 
 // Move to next hero
-async function nextHero() {
-  const queue = await getQueue();
-  if (queue.length === 0) return alert("Queue is empty!");
-  queue.shift();
-  await saveQueue(queue);
+function nextHero() {
+  let queue = getQueue();
+  if(queue.length === 0) return alert("Queue is empty!");
+  const next = queue.shift();
+  saveQueue(queue);
+  refreshQueue();
+  openOverlay();
+  overlayWindow.postMessage({hero: next}, "*");
 }
 
 // Initial load
