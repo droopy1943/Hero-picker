@@ -18,7 +18,8 @@
       pointer-events: none;
       box-sizing: border-box;
       border: 20px solid #ff0000;
-      border-image: url('comic_border.png') 40 round;
+      /* 🔥 IMPORTANT: use GitHub-hosted border PNG instead of local */
+      border-image: url('https://raw.githubusercontent.com/droopy1943/Hero-picker/main/images/comic_border.png') 40 round;
     }
     .container {
       position: absolute;
@@ -57,14 +58,14 @@
   </div>
 
   <script>
-    // List of characters and their image filenames
+    // List of characters and their GitHub image links
     const characters = {
-      "Iron Man": "ironman.png",
-      "Thor": "thor.png",
-      "Spider-Man": "spiderman.png",
-      "Magneto": "magneto.png",
-      "Hawkeye": "hawkeye.png",
-      // add more as needed, matching your file names
+      "Iron Man": "https://raw.githubusercontent.com/droopy1943/Hero-picker/main/images/Iron%20Man.png",
+      "Thor": "https://raw.githubusercontent.com/droopy1943/Hero-picker/main/images/Thor.png",
+      "Spider-Man": "https://raw.githubusercontent.com/droopy1943/Hero-picker/main/images/Spider-Man.png",
+      "Magneto": "https://raw.githubusercontent.com/droopy1943/Hero-picker/main/images/Magneto.png",
+      "Hawkeye": "https://raw.githubusercontent.com/droopy1943/Hero-picker/main/images/Hawkeye.png"
+      // 👉 keep expanding this list with the same naming format
     };
 
     const godEl = document.getElementById("godName");
@@ -86,7 +87,7 @@
 
       const imgFile = characters[god];
       if (imgFile) {
-        charImgEl.src = `images/${imgFile}`;
+        charImgEl.src = imgFile;
         charImgEl.style.display = "block";
       } else {
         charImgEl.style.display = "none";
