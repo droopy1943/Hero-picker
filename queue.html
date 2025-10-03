@@ -20,7 +20,19 @@
   }
   button:hover { background:#ffaa00; }
   ul { list-style:none; padding-left:0; }
-  li { margin:5px 0; }
+  li { 
+    margin:10px 0; 
+    display:flex; 
+    align-items:center; 
+    gap:10px; 
+  }
+  li img {
+    width: 50px;
+    height: auto;
+    border: 2px solid #fff;
+    border-radius: 6px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+  }
 </style>
 </head>
 <body>
@@ -36,6 +48,52 @@
 <script>
 let overlayWindow = null;
 
+// Map hero names to image filenames (must match your /images folder)
+const characters = {
+  "Iron Man": "ironman.png",
+  "Thor": "thor.png",
+  "Spider-Man": "spiderman.png",
+  "Magneto": "magneto.png",
+  "Hawkeye": "hawkeye.png",
+  "Adam Warlock": "adamwarlock.png",
+  "Angela": "angela.png",
+  "Black Panther": "blackpanther.png",
+  "Black Widow": "Black Widow.png",
+  "Blade": "blade.png",
+  "Captain America": "captainamerica.png",
+  "Cloak & Dagger": "Cloak & Dagger.png",
+  "Doctor Strange": "doctorstrange.png",
+  "Emma Frost": "emmafrost.png",
+  "Groot": "groot.png",
+  "Hela": "hela.png",
+  "Hulk": "hulk.png",
+  "Human Torch": "humantorch.png",
+  "Invisible Woman": "Invisible Woman.png",
+  "Iron Fist": "Iron Fist.png",
+  "Jeff the Land Shark": "Jeff the land shark.png",
+  "Loki": "Loki.png",
+  "Luna Snow": "Luna Snow.png",
+  "Magik": "Magik.png",
+  "Mantis": "Mantis.png",
+  "Mister Fantastic": "Mister Fantastic.png",
+  "Moon Knight": "Moon Knight.png",
+  "Namor": "Namor.png",
+  "Peni Parker": "Peni Parker.png",
+  "Phoenix": "Phoenix.png",
+  "Psylocke": "Psylocke.png",
+  "The Punisher": "The Punisher.png",
+  "The Thing": "The Thing.png",
+  "Rocket Raccoon": "Rocket Raccoon.png",
+  "Scarlet Witch": "Scarlet Witch.png",
+  "Squirrel Girl": "Squirrel Girl.png",
+  "Star-Lord": "Star-Lord.png",
+  "Storm": "Storm.png",
+  "Ultron": "Ultron.png",
+  "Venom": "Venom.png",
+  "Winter Soldier": "Winter Soldier.png",
+  "Wolverine": "Wolverine.png"
+};
+
 // Get queue from localStorage
 function getQueue() {
   return JSON.parse(localStorage.getItem("heroQueue") || "[]");
@@ -50,7 +108,27 @@ function saveQueue(queue) {
 function refreshQueue() {
   const queue = getQueue();
   const list = document.getElementById("queueList");
-  list.innerHTML = queue.map((q,i)=>`<li>${i+1}. ${q}</li>`).join("");
+  list.innerHTML = "";
+
+  queue.forEach((hero, i) => {
+    const li = document.createElement("li");
+
+    // Hero image
+    const img = document.createElement("img");
+    if (characters[hero]) {
+      img.src = `images/${characters[hero]}`;
+    } else {
+      img.src = "images/placeholder.png"; // optional fallback
+    }
+
+    // Hero name
+    const span = document.createElement("span");
+    span.textContent = `${i+1}. ${hero}`;
+
+    li.appendChild(img);
+    li.appendChild(span);
+    list.appendChild(li);
+  });
 }
 
 // Open overlay window if needed
