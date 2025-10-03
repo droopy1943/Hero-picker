@@ -18,25 +18,12 @@
       height: 100%;
     }
 
-    /* Border image as its own element */
-    #borderImg {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(0deg); /* tweak angle here */
-      width: 120%;   /* make it larger than hero image area */
-      height: auto;
-      pointer-events: none;
-      z-index: 0;
-    }
-
+    /* Wrapper for hero and border */
     .container {
       position: absolute;
-      top: 50%;
-      left: 50%;
+      top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       text-align: center;
-      z-index: 1;
     }
 
     .character-img {
@@ -47,6 +34,19 @@
       margin-bottom: 20px;
       border: 4px solid #ffffff;
       box-shadow: 0 0 20px rgba(0,0,0,0.7);
+      position: relative;
+      z-index: 1;
+    }
+
+    #borderImg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-2deg); /* tweak here */
+      width: 360px;   /* a bit larger than char image */
+      height: auto;
+      z-index: 0;
+      pointer-events: none;
     }
 
     .god-name {
@@ -65,12 +65,13 @@
 </head>
 <body>
   <div class="overlay">
-    <!-- Border as image -->
-    <img id="borderImg" src="images/comic_border.png" alt="Border">
-
-    <!-- Character + labels -->
     <div class="container">
+      <!-- Border first so it sits behind -->
+      <img id="borderImg" src="images/comic_border.png" alt="Border">
+      
+      <!-- Hero image -->
       <img id="charImg" class="character-img" src="" alt="" />
+      
       <div id="godName" class="god-name">Waiting for pick...</div>
       <div id="donorName" class="donor-name"></div>
     </div>
@@ -84,7 +85,7 @@
       "Spider-Man": "spiderman.png",
       "Magneto": "magneto.png",
       "Hawkeye": "hawkeye.png",
-      // Add more heroes here...
+      // expand full list here later
     };
 
     const godEl = document.getElementById("godName");
