@@ -1,97 +1,57 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Marvel Rivals Hero Request</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      overflow: hidden; /* Prevent body scroll */
-    }
-    h1 {
-      color: #ffcc00;
-      margin: 15px 0; /* Give breathing room so it’s visible */
-      flex-shrink: 0; /* Don’t let the header collapse */
-    }
-    .grid-container {
-      flex: 1; /* Fill remaining space */
-      overflow-y: auto; /* Scroll internally if needed */
-      width: 100%;
-      display: flex;
-      justify-content: center;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 15px;
-      padding: 10px;
-      max-width: 1000px;
-    }
-    .hero-card {
-      background: #222;
-      border: 2px solid #444;
-      border-radius: 8px;
-      padding: 10px;
-      cursor: pointer;
-      transition: transform 0.2s, border-color 0.2s;
-      text-align: center;
-    }
-    .hero-card:hover {
-      transform: scale(1.05);
-      border-color: #ffcc00;
-    }
-    .hero-card img {
-      width: 100px;
-      height: 100px;
-      object-fit: contain;
-      margin-bottom: 8px;
-    }
-    .hero-name {
-      font-size: 0.9rem;
-      color: #fff;
-    }
-  </style>
-</head>
-<body>
-  <h1>Pick Your Hero!</h1>
-  <div class="grid-container">
-    <div class="grid" id="heroGrid"></div>
-  </div>
-
-  <script>
-    const heroes = [
-      { name: "Adam Warlock", img: "images/Adam Warlock.png" },
-      { name: "Angela", img: "images/Angela.png" },
-      { name: "Black Panther", img: "images/Black Panther.png" },
-      { name: "Black Widow", img: "images/Black Widow.png" },
-      { name: "Blade", img: "images/Blade.png" },
-      { name: "Captain America", img: "images/Captain America.png" },
-      { name: "Doctor Strange", img: "images/Doctor Strange.png" },
-      // ... continue your full hero list
-    ];
-
-    const grid = document.getElementById("heroGrid");
-    heroes.forEach(hero => {
-      const card = document.createElement("div");
-      card.className = "hero-card";
-      card.innerHTML = `
-        <img src="${hero.img}" alt="${hero.name}">
-        <div class="hero-name">${hero.name}</div>
-      `;
-      card.onclick = () => {
-        const message = encodeURIComponent(`I want to request ${hero.name}`);
-        const tipUrl = `https://streamlabs.com/droopy2/tip?amount=5&message=${message}`;
-        window.open(tipUrl, "_blank");
-      };
-      grid.appendChild(card);
-    });
-  </script>
-</body>
-</html>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: #fff;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden; /* Prevent body scroll */
+    padding-top: 60px; /* <-- NEW: push content down below toolbar */
+    box-sizing: border-box;
+  }
+  h1 {
+    color: #ffcc00;
+    margin: 10px 0 20px 0; /* Add spacing around header */
+    flex-shrink: 0;
+  }
+  .grid-container {
+    flex: 1;
+    overflow-y: auto;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 15px;
+    padding: 10px;
+    max-width: 1000px;
+  }
+  .hero-card {
+    background: #222;
+    border: 2px solid #444;
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+    text-align: center;
+  }
+  .hero-card:hover {
+    transform: scale(1.05);
+    border-color: #ffcc00;
+  }
+  .hero-card img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    margin-bottom: 8px;
+  }
+  .hero-name {
+    font-size: 0.9rem;
+    color: #fff;
+  }
+</style>
