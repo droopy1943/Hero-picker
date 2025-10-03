@@ -17,9 +17,18 @@
   }
   h1 {
     color: #ffcc00;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
   }
-
+  #searchBar {
+    margin-bottom: 20px;
+    padding: 8px;
+    font-size: 16px;
+    width: 100%;
+    max-width: 400px;
+    border: 2px solid #444;
+    background: #222;
+    color: #fff;
+  }
   .hero-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -54,63 +63,77 @@
 </head>
 <body>
   <h1>Pick Your Hero!</h1>
+  <input type="text" id="searchBar" placeholder="Search heroes...">
   <div class="hero-grid" id="heroGrid"></div>
 
 <script>
-// Characters with their GitHub-hosted images
+// Characters with reliable GitHub raw links
+const baseUrl = "https://raw.githubusercontent.com/droopy1943/Hero-picker/main/images/";
+
 const characters = {
-  "Adam Warlock": "https://github.com/droopy1943/Hero-picker/blob/main/images/Adam%20Warlock.png?raw=true",
-  "Angela": "https://github.com/droopy1943/Hero-picker/blob/main/images/Angela.png?raw=true",
-  "Black Panther": "https://github.com/droopy1943/Hero-picker/blob/main/images/Black%20Panther.png?raw=true",
-  "Black Widow": "https://github.com/droopy1943/Hero-picker/blob/main/images/Black%20Widow.png?raw=true",
-  "Blade": "https://github.com/droopy1943/Hero-picker/blob/main/images/Blade.png?raw=true",
-  "Captain America": "https://github.com/droopy1943/Hero-picker/blob/main/images/Captain%20America.png?raw=true",
-  "Cloak & Dagger": "https://github.com/droopy1943/Hero-picker/blob/main/images/Cloak%20%26%20Dagger.png?raw=true",
-  "Doctor Strange": "https://github.com/droopy1943/Hero-picker/blob/main/images/Doctor%20Strange.png?raw=true",
-  "Emma Frost": "https://github.com/droopy1943/Hero-picker/blob/main/images/Emma%20Frost.png?raw=true",
-  "Groot": "https://github.com/droopy1943/Hero-picker/blob/main/images/Groot.png?raw=true",
-  "Hawkeye": "https://github.com/droopy1943/Hero-picker/blob/main/images/Hawkeye.png?raw=true",
-  "Hela": "https://github.com/droopy1943/Hero-picker/blob/main/images/Hela.png?raw=true",
-  "Hulk": "https://github.com/droopy1943/Hero-picker/blob/main/images/Hulk.png?raw=true",
-  "Human Torch": "https://github.com/droopy1943/Hero-picker/blob/main/images/Human%20Torch.png?raw=true",
-  "Invisible Woman": "https://github.com/droopy1943/Hero-picker/blob/main/images/Invisible%20Woman.png?raw=true",
-  "Iron Fist": "https://github.com/droopy1943/Hero-picker/blob/main/images/Iron%20Fist.png?raw=true",
-  "Iron Man": "https://github.com/droopy1943/Hero-picker/blob/main/images/Iron%20Man.png?raw=true",
-  "Jeff the Land Shark": "https://github.com/droopy1943/Hero-picker/blob/main/images/Jeff%20the%20Land%20Shark.png?raw=true",
-  "Loki": "https://github.com/droopy1943/Hero-picker/blob/main/images/Loki.png?raw=true",
-  "Luna Snow": "https://github.com/droopy1943/Hero-picker/blob/main/images/Luna%20Snow.png?raw=true",
-  "Magik": "https://github.com/droopy1943/Hero-picker/blob/main/images/Magik.png?raw=true",
-  "Magneto": "https://github.com/droopy1943/Hero-picker/blob/main/images/Magneto.png?raw=true",
-  "Mantis": "https://github.com/droopy1943/Hero-picker/blob/main/images/Mantis.png?raw=true",
-  "Mister Fantastic": "https://github.com/droopy1943/Hero-picker/blob/main/images/Mister%20Fantastic.png?raw=true",
-  "Moon Knight": "https://github.com/droopy1943/Hero-picker/blob/main/images/Moon%20Knight.png?raw=true",
-  "Namor": "https://github.com/droopy1943/Hero-picker/blob/main/images/Namor.png?raw=true",
-  "Peni Parker": "https://github.com/droopy1943/Hero-picker/blob/main/images/Peni%20Parker.png?raw=true",
-  "Phoenix": "https://github.com/droopy1943/Hero-picker/blob/main/images/Phoenix.png?raw=true",
-  "Psylocke": "https://github.com/droopy1943/Hero-picker/blob/main/images/Psylocke.png?raw=true",
-  "The Punisher": "https://github.com/droopy1943/Hero-picker/blob/main/images/The%20Punisher.png?raw=true",
-  "The Thing": "https://github.com/droopy1943/Hero-picker/blob/main/images/The%20Thing.png?raw=true",
-  "Rocket Raccoon": "https://github.com/droopy1943/Hero-picker/blob/main/images/Rocket%20Raccoon.png?raw=true",
-  "Scarlet Witch": "https://github.com/droopy1943/Hero-picker/blob/main/images/Scarlet%20Witch.png?raw=true",
-  "Squirrel Girl": "https://github.com/droopy1943/Hero-picker/blob/main/images/Squirrel%20Girl.png?raw=true",
-  "Spider-Man": "https://github.com/droopy1943/Hero-picker/blob/main/images/Spider-Man.png?raw=true",
-  "Star-Lord": "https://github.com/droopy1943/Hero-picker/blob/main/images/Star-Lord.png?raw=true",
-  "Storm": "https://github.com/droopy1943/Hero-picker/blob/main/images/Storm.png?raw=true",
-  "Thor": "https://github.com/droopy1943/Hero-picker/blob/main/images/Thor.png?raw=true",
-  "Ultron": "https://github.com/droopy1943/Hero-picker/blob/main/images/Ultron.png?raw=true",
-  "Venom": "https://github.com/droopy1943/Hero-picker/blob/main/images/Venom.png?raw=true",
-  "Winter Soldier": "https://github.com/droopy1943/Hero-picker/blob/main/images/Winter%20Soldier.png?raw=true",
-  "Wolverine": "https://github.com/droopy1943/Hero-picker/blob/main/images/Wolverine.png?raw=true"
+  "Adam Warlock": baseUrl + "Adam%20Warlock.png",
+  "Angela": baseUrl + "Angela.png",
+  "Black Panther": baseUrl + "Black%20Panther.png",
+  "Black Widow": baseUrl + "Black%20Widow.png",
+  "Blade": baseUrl + "Blade.png",
+  "Captain America": baseUrl + "Captain%20America.png",
+  "Cloak & Dagger": baseUrl + "Cloak%20%26%20Dagger.png",
+  "Doctor Strange": baseUrl + "Doctor%20Strange.png",
+  "Emma Frost": baseUrl + "Emma%20Frost.png",
+  "Groot": baseUrl + "Groot.png",
+  "Hawkeye": baseUrl + "Hawkeye.png",
+  "Hela": baseUrl + "Hela.png",
+  "Hulk": baseUrl + "Hulk.png",
+  "Human Torch": baseUrl + "Human%20Torch.png",
+  "Invisible Woman": baseUrl + "Invisible%20Woman.png",
+  "Iron Fist": baseUrl + "Iron%20Fist.png",
+  "Iron Man": baseUrl + "Iron%20Man.png",
+  "Jeff the Land Shark": baseUrl + "Jeff%20the%20Land%20Shark.png",
+  "Loki": baseUrl + "Loki.png",
+  "Luna Snow": baseUrl + "Luna%20Snow.png",
+  "Magik": baseUrl + "Magik.png",
+  "Magneto": baseUrl + "Magneto.png",
+  "Mantis": baseUrl + "Mantis.png",
+  "Mister Fantastic": baseUrl + "Mister%20Fantastic.png",
+  "Moon Knight": baseUrl + "Moon%20Knight.png",
+  "Namor": baseUrl + "Namor.png",
+  "Peni Parker": baseUrl + "Peni%20Parker.png",
+  "Phoenix": baseUrl + "Phoenix.png",
+  "Psylocke": baseUrl + "Psylocke.png",
+  "The Punisher": baseUrl + "The%20Punisher.png",
+  "The Thing": baseUrl + "The%20Thing.png",
+  "Rocket Raccoon": baseUrl + "Rocket%20Raccoon.png",
+  "Scarlet Witch": baseUrl + "Scarlet%20Witch.png",
+  "Squirrel Girl": baseUrl + "Squirrel%20Girl.png",
+  "Spider-Man": baseUrl + "Spider-Man.png",
+  "Star-Lord": baseUrl + "Star-Lord.png",
+  "Storm": baseUrl + "Storm.png",
+  "Thor": baseUrl + "Thor.png",
+  "Ultron": baseUrl + "Ultron.png",
+  "Venom": baseUrl + "Venom.png",
+  "Winter Soldier": baseUrl + "Winter%20Soldier.png",
+  "Wolverine": baseUrl + "Wolverine.png"
 };
 
-// Build the grid
+// Build hero grid
 const heroGrid = document.getElementById("heroGrid");
-Object.entries(characters).forEach(([name, url]) => {
-  const card = document.createElement("div");
-  card.className = "hero-card";
-  card.innerHTML = `<img src="${url}" alt="${name}"><span>${name}</span>`;
-  card.onclick = () => selectHero(name);
-  heroGrid.appendChild(card);
+function renderGrid(filter = "") {
+  heroGrid.innerHTML = "";
+  Object.entries(characters).forEach(([name, url]) => {
+    if (name.toLowerCase().includes(filter.toLowerCase())) {
+      const card = document.createElement("div");
+      card.className = "hero-card";
+      card.innerHTML = `<img src="${url}" alt="${name}"><span>${name}</span>`;
+      card.onclick = () => selectHero(name);
+      heroGrid.appendChild(card);
+    }
+  });
+}
+renderGrid();
+
+// Filter with search
+document.getElementById("searchBar").addEventListener("input", (e) => {
+  renderGrid(e.target.value);
 });
 
 // Open donation link when hero selected
