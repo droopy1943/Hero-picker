@@ -23,7 +23,26 @@
   }
   button:hover { background:#ffaa00; }
   ul { list-style:none; padding-left:0; }
-  li { margin:5px 0; }
+  li { 
+    margin:15px 0; 
+    display: flex; 
+    align-items: center; 
+    background: #222; 
+    padding: 10px; 
+    border-radius: 8px;
+  }
+  li img {
+    width: 100px; 
+    height: auto; 
+    margin-right: 15px; 
+    border: 2px solid #fff;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.6);
+  }
+  li span {
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
 </style>
 </head>
 <body>
@@ -37,14 +56,41 @@
   <option value="Black Widow">Black Widow</option>
   <option value="Blade">Blade</option>
   <option value="Captain America">Captain America</option>
+  <option value="Cloak & Dagger">Cloak & Dagger</option>
   <option value="Doctor Strange">Doctor Strange</option>
+  <option value="Emma Frost">Emma Frost</option>
+  <option value="Groot">Groot</option>
   <option value="Hawkeye">Hawkeye</option>
+  <option value="Hela">Hela</option>
   <option value="Hulk">Hulk</option>
+  <option value="Human Torch">Human Torch</option>
+  <option value="Invisible Woman">Invisible Woman</option>
+  <option value="Iron Fist">Iron Fist</option>
   <option value="Iron Man">Iron Man</option>
+  <option value="Jeff the Land Shark">Jeff the Land Shark</option>
   <option value="Loki">Loki</option>
+  <option value="Luna Snow">Luna Snow</option>
+  <option value="Magik">Magik</option>
   <option value="Magneto">Magneto</option>
+  <option value="Mantis">Mantis</option>
+  <option value="Mister Fantastic">Mister Fantastic</option>
+  <option value="Moon Knight">Moon Knight</option>
+  <option value="Namor">Namor</option>
+  <option value="Peni Parker">Peni Parker</option>
+  <option value="Phoenix">Phoenix</option>
+  <option value="Psylocke">Psylocke</option>
+  <option value="The Punisher">The Punisher</option>
+  <option value="The Thing">The Thing</option>
+  <option value="Rocket Raccoon">Rocket Raccoon</option>
+  <option value="Scarlet Witch">Scarlet Witch</option>
+  <option value="Squirrel Girl">Squirrel Girl</option>
   <option value="Spider-Man">Spider-Man</option>
+  <option value="Star-Lord">Star-Lord</option>
+  <option value="Storm">Storm</option>
   <option value="Thor">Thor</option>
+  <option value="Ultron">Ultron</option>
+  <option value="Venom">Venom</option>
+  <option value="Winter Soldier">Winter Soldier</option>
   <option value="Wolverine">Wolverine</option>
 </select>
 <br>
@@ -59,7 +105,52 @@
 let queue = [];
 let overlayWindow = null;
 
-// Open overlay.html in another window (for testing)
+// Map hero names to image file names
+const heroImages = {
+  "Adam Warlock": "adamwarlock.png",
+  "Angela": "angela.png",
+  "Black Panther": "blackpanther.png",
+  "Black Widow": "Black Widow.png",
+  "Blade": "blade.png",
+  "Captain America": "captainamerica.png",
+  "Cloak & Dagger": "Cloak & Dagger.png",
+  "Doctor Strange": "doctorstrange.png",
+  "Emma Frost": "emmafrost.png",
+  "Groot": "groot.png",
+  "Hawkeye": "hawkeye.png",
+  "Hela": "hela.png",
+  "Hulk": "hulk.png",
+  "Human Torch": "humantorch.png",
+  "Invisible Woman": "Invisible Woman.png",
+  "Iron Fist": "Iron Fist.png",
+  "Iron Man": "ironman.png",
+  "Jeff the Land Shark": "Jeff the land shark.png",
+  "Loki": "loki.png",
+  "Luna Snow": "Luna Snow.png",
+  "Magik": "Magik.png",
+  "Magneto": "magneto.png",
+  "Mantis": "Mantis.png",
+  "Mister Fantastic": "Mister Fantastic.png",
+  "Moon Knight": "Moon Knight.png",
+  "Namor": "Namor.png",
+  "Peni Parker": "Peni Parkerr.png",
+  "Phoenix": "Phoenix.png",
+  "Psylocke": "Psylocke.png",
+  "The Punisher": "The Punisher.png",
+  "The Thing": "The Thing.png",
+  "Rocket Raccoon": "Rocket Raccoon.png",
+  "Scarlet Witch": "Scarlet Witch.png",
+  "Squirrel Girl": "Squirrel Girl.png",
+  "Spider-Man": "spiderman.png",
+  "Star-Lord": "Star-Lord.png",
+  "Storm": "Storm.png",
+  "Thor": "thor.png",
+  "Ultron": "Ultron.png",
+  "Venom": "Venom.png",
+  "Winter Soldier": "Winterr Soldier.png",
+  "Wolverine": "Wolverine.png"
+};
+
 function openOverlay() {
   if(!overlayWindow || overlayWindow.closed) {
     overlayWindow = window.open("overlay.html", "Overlay", "width=800,height=600");
@@ -68,7 +159,10 @@ function openOverlay() {
 
 function refreshQueue() {
   const list = document.getElementById("queueList");
-  list.innerHTML = queue.map((q,i)=>`<li>${i+1}. ${q}</li>`).join("");
+  list.innerHTML = queue.map((q,i)=> {
+    const img = heroImages[q] ? `<img src="images/${heroImages[q]}" alt="${q}">` : "";
+    return `<li>${img}<span>${i+1}. ${q}</span></li>`;
+  }).join("");
 }
 
 function addHero() {
