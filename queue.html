@@ -4,8 +4,20 @@
 <meta charset="UTF-8">
 <title>Hero Queue Manager</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; background:#111; color:#fff; }
-  button { margin: 5px; padding:5px 10px; background:#ffcc00; border:none; cursor:pointer; font-weight:bold; }
+  body { 
+    font-family: Arial, sans-serif; 
+    margin: 20px; 
+    background:#111; 
+    color:#fff; 
+  }
+  button { 
+    margin: 5px; 
+    padding:5px 10px; 
+    background:#ffcc00; 
+    border:none; 
+    cursor:pointer; 
+    font-weight:bold; 
+  }
   button:hover { background:#ffaa00; }
   ul { list-style:none; padding-left:0; }
   li { margin:5px 0; }
@@ -16,6 +28,7 @@
 
 <button onclick="refreshQueue()">Refresh Queue</button>
 <button onclick="nextHero()">Next Hero</button>
+<button onclick="clearQueue()">Clear Queue</button>
 
 <h2>Current Queue:</h2>
 <ul id="queueList"></ul>
@@ -56,6 +69,12 @@ function nextHero() {
   refreshQueue();
   openOverlay();
   overlayWindow.postMessage({hero: next}, "*");
+}
+
+// Clear entire queue
+function clearQueue() {
+  saveQueue([]);
+  refreshQueue();
 }
 
 // Initial load
