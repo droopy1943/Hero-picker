@@ -1,108 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Marvel Rivals Pick Overlay</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: rgba(0,0,0,0);
-      font-family: "Comic Sans MS", "Comic Sans", cursive;
-      color: white;
-    }
-    .frame {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      pointer-events: none;
-      box-sizing: border-box;
-      border: 20px solid #ff0000;
-      border-image: url('images/comic_border.png')stretch;
-    }
-    .container {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-    }
-    .character-img {
-      width: 300px;
-      height: auto;
-      max-height: 300px;
-      object-fit: contain;
-      margin-bottom: 20px;
-      border: 4px solid #ffffff;
-      box-shadow: 0 0 20px rgba(0,0,0,0.7);
-    }
-    .god-name {
-      font-size: 3rem;
-      color: #ffcc00;
-      text-shadow: 2px 2px 5px black;
-      margin-bottom: 10px;
-    }
-    .donor-name {
-      font-size: 1.5rem;
-      color: #00ffcc;
-      text-shadow: 1px 1px 3px black;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Marvel Rivals Hero Overlay</title>
+<style>
+  body {
+    margin: 0;
+    background: rgba(0,0,0,0);
+    overflow: hidden;
+  }
+
+  /* Overlay container centers everything */
+  .overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+  }
+
+  /* Wrapper for hero + border (5% bigger) */
+  .char-wrapper {
+    position: relative;
+    display: inline-block;
+    width: calc(400px * 1.05);   /* hero width + 5% */
+    height: calc(250px * 1.05);   /* hero height + 5% */
+    margin: 0 auto;
+    overflow: visible; /* allows border to extend slightly */
+  }
+
+  /* Hero image */
+  #charImg {
+    display: block;
+    width: 100%;    /* fill wrapper */
+    height: 100%;
+    object-fit: contain;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Border scaled relative to wrapper */
+  #borderImg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-52%, -52%) rotate(3deg); /* optional tilt */
+    width: 135%;   /* slightly bigger than hero to frame it */
+    height: 138%;
+    z-index: 2;
+    pointer-events: none;
+  }
+</style>
 </head>
+
 <body>
-  <div class="frame"></div>
-  <div class="container">
-    <img id="charImg" class="character-img" src="" alt="" />
-    <div id="godName" class="god-name">Waiting for pick...</div>
-    <div id="donorName" class="donor-name"></div>
+  <div class="overlay">
+    <div class="char-wrapper">
+      <img id="charImg" alt="Hero Image">
+      <img id="borderImg" src="images/comic_border.png" alt="Border Image">
+    </div>
   </div>
 
   <script>
-    // List of characters and their image filenames
+    // Map hero names to image filenames
     const characters = {
-      "Iron Man": "ironman.png",
-      "Thor": "thor.png",
-      "Spider-Man": "spiderman.png",
-      "Magneto": "magneto.png",
-      "Hawkeye": "hawkeye.png",
-      // add more as needed, matching your file names
-    };
+  "Adam Warlock": "adamwarlock.png",
+  "Angela": "angela.png",
+  "Black Panther": "blackpanther.png",
+  "Black Widow": "blackwidow.png",
+  "Blade": "blade.png",
+  "Captain America": "captainamerica.png",
+  "Cloak & Dagger": "cloakanddagger.png",
+  "Doctor Strange": "doctorstrange.png",
+  "Emma Frost": "emmafrost.png",
+  "Groot": "groot.png",
+  "Hawkeye": "hawkeye.png",
+  "Hela": "hela.png",
+  "Hulk": "hulk.png",
+  "Human Torch": "humantorch.png",
+  "Invisible Woman": "invisiblewoman.png",
+  "Iron Fist": "ironfist.png",
+  "Iron Man": "ironman.png",
+  "Jeff the Land Shark": "jeffthelandshark.png",
+  "Loki": "loki.png",
+  "Luna Snow": "lunasnow.png",
+  "Magik": "magik.png",
+  "Magneto": "magneto.png",
+  "Mantis": "mantis.png",
+  "Mister Fantastic": "misterfantastic.png",
+  "Moon Knight": "moonknight.png",
+  "Namor": "namor.png",
+  "Peni Parker": "peniparker.png",
+  "Phoenix": "phoenix.png",
+  "Psylocke": "psylocke.png",
+  "The Punisher": "thepunisher.png",
+  "The Thing": "thething.png",
+  "Rocket Raccoon": "rocketraccoon.png",
+  "Scarlet Witch": "scarletwitch.png",
+  "Squirrel Girl": "squirrelgirl.png",
+  "Spider-Man": "spiderman.png",
+  "Star-Lord": "starlord.png",
+  "Storm": "storm.png",
+  "Thor": "thor.png",
+  "Ultron": "ultron.png",
+  "Venom": "venom.png",
+  "Winter Soldier": "wintersoldier.png",
+  "Wolverine": "wolverine.png"
+};
 
-    const godEl = document.getElementById("godName");
-    const donorEl = document.getElementById("donorName");
+
     const charImgEl = document.getElementById("charImg");
 
-    function newDonation(donor, amount, heroName = null) {
-      let god;
+    function newDonation(heroName) {
+  // Find matching key ignoring case
+  const heroKey = Object.keys(characters).find(
+    key => key.toLowerCase() === heroName.toLowerCase()
+  );
 
-      if (heroName && characters[heroName]) {
-        god = heroName; // use the hero from queue
-      } else {
-        const names = Object.keys(characters);
-        god = names[Math.floor(Math.random() * names.length)];
-      }
+  if(heroKey) {
+    charImgEl.src = `images/${characters[heroKey]}`;
+    charImgEl.style.display = "block";
+  } else {
+    console.log("Hero not found:", heroName);
+    charImgEl.style.display = "none";
+  }
+}
 
-      godEl.textContent = god;
-      donorEl.textContent = donor ? `Picked by ${donor} ($${amount})` : "";
 
-      const imgFile = characters[god];
-      if (imgFile) {
-        charImgEl.src = `images/${imgFile}`;
-        charImgEl.style.display = "block";
-      } else {
-        charImgEl.style.display = "none";
-      }
-    }
 
-    // Expose for manual testing in console
     window.newDonation = newDonation;
-
-    // ✅ Listen for queue.html sending the next hero
-    window.addEventListener("message", (event) => {
-      if (event.data.hero) {
-        console.log("Overlay received hero:", event.data.hero);
-        newDonation(null, null, event.data.hero);
-      }
-    });
   </script>
 </body>
 </html>
+<script src="https://cdn.jsdelivr.net/npm/@streamlabs/streamlabs-obs-browser@1.0.0/dist/streamlabs.min.js"></script>
+<script>
+  // Listen for Streamlabs donation events
+  const slClient = new Streamlabs();
+  slClient.on('donation', function(data) {
+    // Expect the message to contain the hero, e.g., "I want to request Thor"
+    const message = data.message || "";
+    const heroMatch = message.match(/request (\w[\w\s\-]*)/i);
+    if(heroMatch) {
+      const hero = heroMatch[1];
+      console.log("Donation hero detected:", hero);
+      newDonation(hero); // This calls your existing function
+    }
+  });
+</script>
+<script>
+  // Temporary test function to simulate a hero selection
+  function testHero(heroName) {
+    newDonation(heroName);
+  }
+
+  // Expose globally so you can call it in the console
+  window.testHero = testHero;
+</script>
