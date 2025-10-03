@@ -93,18 +93,10 @@
       }
     }
 
-    // Demo / test mode
-    setInterval(() => {
-      const demoNames = ["Alex", "John", "Viewer42", "HeroFan"];
-      const donor = demoNames[Math.floor(Math.random() * demoNames.length)];
-      const amount = (Math.random() * 20 + 1).toFixed(2);
-      newDonation(donor, amount);
-    }, 5000);
-
     // Expose for manual testing in console
     window.newDonation = newDonation;
 
-    // ✅ NEW: Listen for queue.html sending the next hero
+    // ✅ Listen for queue.html sending the next hero
     window.addEventListener("message", (event) => {
       if (event.data.hero) {
         console.log("Overlay received hero:", event.data.hero);
