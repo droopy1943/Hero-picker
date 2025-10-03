@@ -4,33 +4,12 @@
 <meta charset="UTF-8">
 <title>Hero Queue Manager</title>
 <style>
-  body { 
-    font-family: Arial, sans-serif; 
-    margin: 20px; 
-    background:#111; 
-    color:#fff; 
-  }
-  select, button { 
-    margin: 5px; 
-    padding:5px 10px; 
-    font-size: 1rem;
-  }
-  button { 
-    background:#ffcc00; 
-    border:none; 
-    cursor:pointer; 
-    font-weight:bold; 
-  }
+  body { font-family: Arial, sans-serif; margin: 20px; background:#111; color:#fff; }
+  select, button { margin: 5px; padding:5px 10px; font-size: 1rem; }
+  button { background:#ffcc00; border:none; cursor:pointer; font-weight:bold; }
   button:hover { background:#ffaa00; }
   ul { list-style:none; padding-left:0; }
-  li { 
-    margin:10px 0; 
-    padding:10px; 
-    background:#222; 
-    border-radius:6px; 
-    font-size: 1.3rem; 
-    font-weight:bold; 
-  }
+  li { margin:10px 0; padding:10px; background:#222; border-radius:6px; font-size:1.3rem; font-weight:bold; }
 </style>
 </head>
 <body>
@@ -89,41 +68,74 @@
 <h2>Current Queue:</h2>
 <ul id="queueList"></ul>
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
 <script>
-let queue = [];
-let overlayWindow = null;
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
+    authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
+    databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+    projectId: "marvel-rivals-overlay-7f867",
+    storageBucket: "marvel-rivals-overlay-7f867.firebasestorage.app",
+    messagingSenderId: "1078364810175",
+    appId: "1:1078364810175:web:fac410007b70b65e348f0a"
+  };
 
-function openOverlay() {
-  if(!overlayWindow || overlayWindow.closed) {
-    overlayWindow = window.open("overlay.html", "Overlay", "width=800,height=600");
+  // Init Firebase
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  let queue = [];
+  let overlayWindow = null;
+
+  function openOverlay() {
+    if(!overlayWindow || overlayWindow.closed) {
+      overlayWindow = window.open("overlay.html", "Overlay", "width=800,height=600");
+    }
   }
-}
 
-function refreshQueue() {
-  const list = document.getElementById("queueList");
-  list.innerHTML = queue.map((q,i)=>`<li>${i+1}. ${q}</li>`).join("");
-}
+  function refreshQueue() {
+    const list = document.getElementById("queueList");
+    list.innerHTML = queue.map((q,i)=>`<li>${i+1}. ${q}</li>`).join("");
+  }
 
-function addHero() {
-  const hero = document.getElementById("heroSelect").value;
-  queue.push(hero);
+  // Listen for new heroes in Firebase
+  db.ref("queue").on("child_added", snapshot => {
+    const data = snapshot.val();
+    queue.push(data.hero);
+    refreshQueue();
+  });
+
+  function addHero() {
+    const hero = document.getElementById("heroSelect").value;
+    db.ref("queue").push({
+      hero: hero,
+      timestamp: Date.now()
+    });
+  }
+
+  function nextHero() {
+    if(queue.length === 0) return alert("Queue is empty!");
+    const next = queue.shift();
+    refreshQueue();
+    openOverlay();
+    overlayWindow.postMessage({hero: next}, "*");
+
+    // Remove from Firebase
+    db.ref("queue").orderByChild("timestamp").limitToFirst(1).once("child_added", snap => {
+      db.ref("queue/" + snap.key).remove();
+    });
+  }
+
+  function clearQueue() {
+    queue = [];
+    refreshQueue();
+    db.ref("queue").remove();
+  }
+
   refreshQueue();
-}
-
-function nextHero() {
-  if(queue.length === 0) return alert("Queue is empty!");
-  const next = queue.shift();
-  refreshQueue();
-  openOverlay();
-  overlayWindow.postMessage({hero: next}, "*");
-}
-
-function clearQueue() {
-  queue = [];
-  refreshQueue();
-}
-
-refreshQueue();
 </script>
 </body>
 </html>
