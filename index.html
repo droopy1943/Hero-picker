@@ -9,38 +9,19 @@
       background: #111;
       color: #fff;
       margin: 0;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      overflow: hidden;
-    }
-    .page-wrapper {
-      margin-top: 60px; /* pushes content below browser toolbar */
-      flex: 1;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      padding: 20px;
+      text-align: center;
     }
     h1 {
       color: #ffcc00;
-      margin: 15px 0;
-      flex-shrink: 0;
-    }
-    .grid-container {
-      flex: 1;
-      overflow-y: auto;
-      width: 100%;
-      display: flex;
-      justify-content: center;
+      margin-bottom: 20px;
     }
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
       gap: 15px;
-      padding: 10px;
       max-width: 1000px;
+      margin: 0 auto;
     }
     .hero-card {
       background: #222;
@@ -68,12 +49,8 @@
   </style>
 </head>
 <body>
-  <div class="page-wrapper">
-    <h1>Pick Your Hero!</h1>
-    <div class="grid-container">
-      <div class="grid" id="heroGrid"></div>
-    </div>
-  </div>
+  <h1>Pick Your Hero!</h1>
+  <div class="grid" id="heroGrid"></div>
 
   <script>
     const heroes = [
