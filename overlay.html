@@ -11,21 +11,21 @@
       font-family: "Comic Sans MS", "Comic Sans", cursive;
       color: white;
     }
-
-    .overlay {
-      position: relative;
-      width: 100%;
-      height: 100%;
+    .frame {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      box-sizing: border-box;
+      border: 20px solid #ff0000;
+      border-image: url('comic_border.png') 40 round;
     }
-
-    /* Wrapper for hero and border */
     .container {
       position: absolute;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       text-align: center;
     }
-
     .character-img {
       width: 300px;
       height: auto;
@@ -34,28 +34,13 @@
       margin-bottom: 20px;
       border: 4px solid #ffffff;
       box-shadow: 0 0 20px rgba(0,0,0,0.7);
-      position: relative;
-      z-index: 1;
     }
-
-    #borderImg {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(-2deg); /* tweak here */
-      width: 360px;   /* a bit larger than char image */
-      height: auto;
-      z-index: 0;
-      pointer-events: none;
-    }
-
     .god-name {
       font-size: 3rem;
       color: #ffcc00;
       text-shadow: 2px 2px 5px black;
       margin-bottom: 10px;
     }
-
     .donor-name {
       font-size: 1.5rem;
       color: #00ffcc;
@@ -64,28 +49,22 @@
   </style>
 </head>
 <body>
-  <div class="overlay">
-    <div class="container">
-      <!-- Border first so it sits behind -->
-      <img id="borderImg" src="images/comic_border.png" alt="Border">
-      
-      <!-- Hero image -->
-      <img id="charImg" class="character-img" src="" alt="" />
-      
-      <div id="godName" class="god-name">Waiting for pick...</div>
-      <div id="donorName" class="donor-name"></div>
-    </div>
+  <div class="frame"></div>
+  <div class="container">
+    <img id="charImg" class="character-img" src="" alt="" />
+    <div id="godName" class="god-name">Waiting for pick...</div>
+    <div id="donorName" class="donor-name"></div>
   </div>
 
   <script>
-    // Characters map
+    // List of characters and their image filenames
     const characters = {
       "Iron Man": "ironman.png",
       "Thor": "thor.png",
       "Spider-Man": "spiderman.png",
       "Magneto": "magneto.png",
       "Hawkeye": "hawkeye.png",
-      // expand full list here later
+      // add more as needed, matching your file names
     };
 
     const godEl = document.getElementById("godName");
@@ -96,7 +75,7 @@
       let god;
 
       if (heroName && characters[heroName]) {
-        god = heroName;
+        god = heroName; // use the hero from queue
       } else {
         const names = Object.keys(characters);
         god = names[Math.floor(Math.random() * names.length)];
@@ -114,16 +93,16 @@
       }
     }
 
-    // Listen for queue.html sending the next hero
+    // Expose for manual testing in console
+    window.newDonation = newDonation;
+
+    // ✅ Listen for queue.html sending the next hero
     window.addEventListener("message", (event) => {
       if (event.data.hero) {
         console.log("Overlay received hero:", event.data.hero);
         newDonation(null, null, event.data.hero);
       }
     });
-
-    // Expose for manual testing
-    window.newDonation = newDonation;
   </script>
 </body>
 </html>
