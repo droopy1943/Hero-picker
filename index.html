@@ -8,134 +8,100 @@
       font-family: Arial, sans-serif;
       background: #111;
       color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
       margin: 0;
-      padding: 20px;
-      text-align: center;
     }
     h1 {
       color: #ffcc00;
       margin-bottom: 20px;
     }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 15px;
-      justify-items: center;
+    select, button {
+      font-size: 1rem;
+      margin: 10px 0;
+      padding: 5px 10px;
     }
-    .hero-card {
-      background: #222;
-      border: 2px solid #444;
-      border-radius: 8px;
-      padding: 10px;
+    button {
+      background: #ffcc00;
+      border: none;
       cursor: pointer;
-      transition: transform 0.2s, border-color 0.2s;
-      width: 140px;
+      font-weight: bold;
     }
-    .hero-card:hover {
-      transform: scale(1.05);
-      border-color: #ffcc00;
-    }
-    .hero-card img {
-      width: 100px;
-      height: 100px;
-      object-fit: contain;
-      margin-bottom: 10px;
-    }
-    .hero-name {
-      font-size: 0.9rem;
-      color: #fff;
+    button:hover {
+      background: #ffaa00;
     }
   </style>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body>
   <h1>Pick Your Hero!</h1>
-  <div class="grid" id="heroGrid"></div>
+  <label for="heroSelect">Select a hero:</label>
+  <select id="heroSelect">
+    <option value="Adam Warlock">Adam Warlock</option>
+    <option value="Angela">Angela</option>
+    <option value="Black Panther">Black Panther</option>
+    <option value="Black Widow">Black Widow</option>
+    <option value="Blade">Blade</option>
+    <option value="Captain America">Captain America</option>
+    <option value="Cloak & Dagger">Cloak & Dagger</option>
+    <option value="Doctor Strange">Doctor Strange</option>
+    <option value="Emma Frost">Emma Frost</option>
+    <option value="Groot">Groot</option>
+    <option value="Hawkeye">Hawkeye</option>
+    <option value="Hela">Hela</option>
+    <option value="Hulk">Hulk</option>
+    <option value="Human Torch">Human Torch</option>
+    <option value="Invisible Woman">Invisible Woman</option>
+    <option value="Iron Fist">Iron Fist</option>
+    <option value="Iron Man">Iron Man</option>
+    <option value="Jeff the Land Shark">Jeff the Land Shark</option>
+    <option value="Loki">Loki</option>
+    <option value="Luna Snow">Luna Snow</option>
+    <option value="Magik">Magik</option>
+    <option value="Magneto">Magneto</option>
+    <option value="Mantis">Mantis</option>
+    <option value="Mister Fantastic">Mister Fantastic</option>
+    <option value="Moon Knight">Moon Knight</option>
+    <option value="Namor">Namor</option>
+    <option value="Peni Parker">Peni Parker</option>
+    <option value="Phoenix">Phoenix</option>
+    <option value="Psylocke">Psylocke</option>
+    <option value="The Punisher">The Punisher</option>
+    <option value="The Thing">The Thing</option>
+    <option value="Rocket Raccoon">Rocket Raccoon</option>
+    <option value="Scarlet Witch">Scarlet Witch</option>
+    <option value="Squirrel Girl">Squirrel Girl</option>
+    <option value="Spider-Man">Spider-Man</option>
+    <option value="Star-Lord">Star-Lord</option>
+    <option value="Storm">Storm</option>
+    <option value="Thor">Thor</option>
+    <option value="Ultron">Ultron</option>
+    <option value="Venom">Venom</option>
+    <option value="Winter Soldier">Winter Soldier</option>
+    <option value="Wolverine">Wolverine</option>
+  </select>
+  <br>
+  <button id="donateBtn">Donate $5 & Request</button>
 
   <script>
-    // Firebase config (yours)
-    const firebaseConfig = {
-      apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
-      authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
-      databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
-      projectId: "marvel-rivals-overlay-7f867",
-      storageBucket: "marvel-rivals-overlay-7f867.firebasestorage.app",
-      messagingSenderId: "1078364810175",
-      appId: "1:1078364810175:web:fac410007b70b65e348f0a"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const heroSelect = document.getElementById("heroSelect");
+    const donateBtn = document.getElementById("donateBtn");
 
-    const heroes = [
-      { name: "Adam Warlock", img: "images/adamwarlock.png" },
-      { name: "Angela", img: "images/angela.png" },
-      { name: "Black Panther", img: "images/blackpanther.png" },
-      { name: "Black Widow", img: "images/Black%20Widow.png" },
-      { name: "Blade", img: "images/blade.png" },
-      { name: "Captain America", img: "images/captainamerica.png" },
-      { name: "Cloak & Dagger", img: "images/Cloak%20&%20Dagger.png" },
-      { name: "Doctor Strange", img: "images/doctorstrange.png" },
-      { name: "Emma Frost", img: "images/emmafrost.png" },
-      { name: "Groot", img: "images/groot.png" },
-      { name: "Hawkeye", img: "images/hawkeye.png" },
-      { name: "Hela", img: "images/hela.png" },
-      { name: "Hulk", img: "images/hulk.png" },
-      { name: "Human Torch", img: "images/humantorch.png" },
-      { name: "Invisible Woman", img: "images/Invisible%20Woman.png" },
-      { name: "Iron Fist", img: "images/Iron%20Fist.png" },
-      { name: "Iron Man", img: "images/ironman.png" },
-      { name: "Jeff the Land Shark", img: "images/Jeff%20the%20land%20shark.png" },
-      { name: "Loki", img: "images/Loki.png" },
-      { name: "Luna Snow", img: "images/Luna%20Snow.png" },
-      { name: "Magik", img: "images/Magik.png" },
-      { name: "Magneto", img: "images/magneto.png" },
-      { name: "Mantis", img: "images/Mantis.png" },
-      { name: "Mister Fantastic", img: "images/Mister%20Fantastic.png" },
-      { name: "Moon Knight", img: "images/Moon%20Knight.png" },
-      { name: "Namor", img: "images/Namor.png" },
-      { name: "Peni Parker", img: "images/Peni%20Parkerr.png" },
-      { name: "Phoenix", img: "images/Phoenix.png" },
-      { name: "Psylocke", img: "images/Psylocke.png" },
-      { name: "The Punisher", img: "images/The%20Punisher.png" },
-      { name: "The Thing", img: "images/The%20Thing.png" },
-      { name: "Rocket Raccoon", img: "images/Rocket%20Raccoon.png" },
-      { name: "Scarlet Witch", img: "images/Scarlet%20Witch.png" },
-      { name: "Squirrel Girl", img: "images/Squirrel%20Girl.png" },
-      { name: "Spider-Man", img: "images/spiderman.png" },
-      { name: "Star-Lord", img: "images/Star-Lord.png" },
-      { name: "Storm", img: "images/Storm.png" },
-      { name: "Thor", img: "images/thor.png" },
-      { name: "Ultron", img: "images/Ultron.png" },
-      { name: "Venom", img: "images/Venom.png" },
-      { name: "Winter Soldier", img: "images/Winterr%20Soldier.png" },
-      { name: "Wolverine", img: "images/Wolverine.png" }
-    ];
+    donateBtn.addEventListener("click", () => {
+      const hero = heroSelect.value;
+      const amount = 5;
+      const message = encodeURIComponent(`I want to request ${hero}`);
 
-    const grid = document.getElementById("heroGrid");
-    heroes.forEach(hero => {
-      const card = document.createElement("div");
-      card.className = "hero-card";
-      card.innerHTML = `
-        <img src="${hero.img}" alt="${hero.name}">
-        <div class="hero-name">${hero.name}</div>
-      `;
-      card.onclick = () => {
-        // Push to Firebase queue
-        db.ref("queue").push({
-          name: hero.name,
-          donor: "Anonymous", // can replace later with real donor info
-          amount: 5
-        });
+      // Save hero to local queue
+      let queue = JSON.parse(localStorage.getItem("heroQueue") || "[]");
+      queue.push(hero);
+      localStorage.setItem("heroQueue", JSON.stringify(queue));
 
-        // Redirect to donation page
-        const message = encodeURIComponent(\`I want to request ${hero.name}\`);
-        const tipUrl = \`https://streamlabs.com/droopy2/tip?amount=5&message=\${message}\`;
-        window.open(tipUrl, "_blank");
-      };
-      grid.appendChild(card);
+      // Redirect to Streamlabs donation page with pre-filled info
+      const tipUrl = `https://streamlabs.com/droopy2/tip?amount=${amount}&message=${message}`;
+      window.open(tipUrl, "_blank");
     });
   </script>
 </body>
