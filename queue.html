@@ -3,73 +3,198 @@
 <head>
 <meta charset="UTF-8">
 <title>Hero Queue Manager</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
+  :root { color-scheme: dark; }
   body { font-family: Arial, sans-serif; margin: 20px; background:#111; color:#fff; }
-  input { margin: 5px; width: 200px; padding:5px; }
-  button { margin: 5px; padding:5px 10px; background:#ffcc00; border:none; cursor:pointer; font-weight:bold; }
+  h1 { margin: 0 0 12px 0; }
+  .row { display:flex; flex-wrap: wrap; align-items:center; gap:8px; margin-bottom:10px; }
+  select, input, button { padding:8px; border-radius:6px; border:1px solid #333; background:#1b1b1b; color:#fff; }
+  button { background:#ffcc00; color:#111; border:none; font-weight:bold; cursor:pointer; }
   button:hover { background:#ffaa00; }
-  ul { list-style:none; padding-left:0; }
-  li { margin:5px 0; }
+  .panel { background:#151515; border:1px solid #2a2a2a; border-radius:8px; padding:12px; margin-top:12px; }
+  ul { list-style:none; padding:0; margin:0; }
+  li { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px; border-bottom:1px solid #2a2a2a; }
+  .small { font-size:12px; color:#bbb; }
+  .spacer { flex: 1; }
+  .danger { background:#ff5b5b; color:#111; }
+  .danger:hover { background:#ff3c3c; }
+  .pill { padding:2px 8px; background:#222; border-radius:999px; border:1px solid #333; }
 </style>
 </head>
 <body>
-<h1>Hero Queue Manager</h1>
+  <h1>Hero Queue Manager</h1>
 
-<label>Add Hero to Queue:</label><br>
-<input id="heroName" placeholder="Hero name">
-<input id="heroImage" placeholder="Image filename (overlay folder)">
-<button onclick="addHero()">Add Hero</button>
-<button onclick="nextHero()">Next Hero</button>
-<button onclick="clearQueue()">Clear Queue</button>
+  <div class="panel">
+    <div class="row">
+      <label for="heroSelect">Add hero:</label>
+      <select id="heroSelect"></select>
+      <button id="addBtn">Add Hero</button>
+      <div class="spacer"></div>
+      <button id="nextBtn">Next Hero ▶</button>
+      <button id="clearBtn" class="danger">Clear Queue</button>
+    </div>
+    <div class="row small">
+      <span>Overlay status: <span id="overlayStatus" class="pill">not opened</span></span>
+      <div class="spacer"></div>
+      <button id="openOverlayBtn">Open overlay.html</button>
+    </div>
+  </div>
 
-<h2>Current Queue:</h2>
-<ul id="queueList"></ul>
+  <div class="panel">
+    <div class="row">
+      <strong>Current Queue</strong>
+      <div class="spacer"></div>
+      <span class="small">Count: <span id="count">0</span></span>
+    </div>
+    <ul id="queueList"></ul>
+  </div>
 
 <script>
+/* ---------- Config: your hero list (names must match overlay mapping/images) ---------- */
+const HEROES = [
+  "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America",
+  "Cloak & Dagger","Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk",
+  "Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark","Loki",
+  "Luna Snow","Magik","Magneto","Mantis","Mister Fantastic","Moon Knight","Namor",
+  "Peni Parker","Phoenix","Psylocke","The Punisher","The Thing","Rocket Raccoon",
+  "Scarlet Witch","Squirrel Girl","Spider-Man","Star-Lord","Storm","Thor","Ultron",
+  "Venom","Winter Soldier","Wolverine"
+];
+
+/* ---------- State ---------- */
 let queue = [];
 let overlayWindow = null;
 
-// If overlay.html is open in another tab/window
-function openOverlay() {
-  if(!overlayWindow || overlayWindow.closed) {
-    overlayWindow = window.open("overlay.html", "Overlay", "width=800,height=600");
+/* ---------- DOM ---------- */
+const heroSelect = document.getElementById('heroSelect');
+const addBtn = document.getElementById('addBtn');
+const nextBtn = document.getElementById('nextBtn');
+const clearBtn = document.getElementById('clearBtn');
+const openOverlayBtn = document.getElementById('openOverlayBtn');
+const overlayStatusEl = document.getElementById('overlayStatus');
+const queueList = document.getElementById('queueList');
+const countEl = document.getElementById('count');
+
+/* ---------- Init dropdown ---------- */
+function populateDropdown() {
+  heroSelect.innerHTML = '';
+  HEROES.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    heroSelect.appendChild(opt);
+  });
+}
+
+/* ---------- Persistence ---------- */
+function loadQueue() {
+  try {
+    queue = JSON.parse(localStorage.getItem('heroQueue')) || [];
+  } catch {
+    queue = [];
   }
 }
 
-// Refresh queue display
-function refreshQueue() {
-  const list = document.getElementById("queueList");
-  list.innerHTML = queue.map((q,i)=>`<li>${i+1}. ${q.name}</li>`).join("");
+function saveQueue() {
+  localStorage.setItem('heroQueue', JSON.stringify(queue));
 }
 
-// Add hero to queue
-function addHero() {
-  const name = document.getElementById("heroName").value.trim();
-  const image = document.getElementById("heroImage").value.trim();
-  if(!name || !image) return alert("Both fields required!");
-  queue.push({name, image});
-  document.getElementById("heroName").value = "";
-  document.getElementById("heroImage").value = "";
-  refreshQueue();
+/* ---------- Render ---------- */
+function renderQueue() {
+  queueList.innerHTML = '';
+  queue.forEach((name, idx) => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <span>${idx+1}. ${name}</span>
+      <span>
+        <button data-idx="${idx}" class="upBtn">↑</button>
+        <button data-idx="${idx}" class="downBtn">↓</button>
+        <button data-idx="${idx}" class="danger delBtn">Remove</button>
+      </span>
+    `;
+    queueList.appendChild(li);
+  });
+  countEl.textContent = queue.length;
+
+  // row controls
+  queueList.querySelectorAll('.delBtn').forEach(btn => {
+    btn.onclick = () => {
+      const i = Number(btn.dataset.idx);
+      queue.splice(i,1);
+      saveQueue(); renderQueue();
+    };
+  });
+  queueList.querySelectorAll('.upBtn').forEach(btn => {
+    btn.onclick = () => {
+      const i = Number(btn.dataset.idx);
+      if (i>0) [queue[i-1], queue[i]] = [queue[i], queue[i-1]];
+      saveQueue(); renderQueue();
+    };
+  });
+  queueList.querySelectorAll('.downBtn').forEach(btn => {
+    btn.onclick = () => {
+      const i = Number(btn.dataset.idx);
+      if (i<queue.length-1) [queue[i+1], queue[i]] = [queue[i], queue[i+1]];
+      saveQueue(); renderQueue();
+    };
+  });
 }
 
-// Move to next hero
-function nextHero() {
-  if(queue.length === 0) return alert("Queue is empty!");
+/* ---------- Overlay ---------- */
+/* Assumes overlay.html is in the SAME folder as this queue.html.
+   If not, change the URL below. */
+function openOverlay() {
+  try {
+    if (!overlayWindow || overlayWindow.closed) {
+      overlayWindow = window.open('overlay.html', 'Overlay', 'width=900,height=700');
+    }
+    overlayStatusEl.textContent = overlayWindow && !overlayWindow.closed ? 'open' : 'not opened';
+  } catch (e) {
+    overlayStatusEl.textContent = 'blocked (pop-up?)';
+  }
+}
+
+function sendToOverlay(heroName) {
+  if (!overlayWindow || overlayWindow.closed) {
+    openOverlay();
+  }
+  // Message payload your overlay is already listening for (we set this up earlier)
+  // In overlay, you’re handling postMessage and calling newDonation(heroName)
+  try {
+    overlayWindow.postMessage({ hero: heroName }, '*');
+  } catch (e) {
+    console.warn('postMessage failed:', e);
+  }
+}
+
+/* ---------- Actions ---------- */
+addBtn.onclick = () => {
+  const name = heroSelect.value;
+  if (!name) return;
+  queue.push(name);
+  saveQueue(); renderQueue();
+};
+
+nextBtn.onclick = () => {
+  if (queue.length === 0) return alert('Queue is empty!');
   const next = queue.shift();
-  refreshQueue();
-  openOverlay(); // ensure overlay window is open
-  overlayWindow.postMessage({hero: next.name}, "*");
-}
+  saveQueue(); renderQueue();
+  sendToOverlay(next);
+};
 
-// Clear the queue
-function clearQueue() {
+clearBtn.onclick = () => {
+  if (!confirm('Clear the whole queue?')) return;
   queue = [];
-  refreshQueue();
-}
+  saveQueue(); renderQueue();
+};
 
-// Initial load
-refreshQueue();
+openOverlayBtn.onclick = openOverlay;
+
+/* ---------- Boot ---------- */
+populateDropdown();
+loadQueue();
+renderQueue();
 </script>
 </body>
 </html>
