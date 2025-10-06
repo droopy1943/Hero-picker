@@ -128,40 +128,39 @@
     const donorTextEl = document.getElementById("donorText");
 
     function newDonation(heroName, donorName = "") {
-      if (!heroName) return;
+  if (!heroName) return;
 
-      const lowerHero = heroName.trim().toLowerCase();
-      const heroKey = Object.keys(characters).find(
-        key => key.toLowerCase() === lowerHero
-      );
+  // Normalize hero names: lowercase, strip spaces, hyphens, and punctuation
+  const normalize = str => str.toLowerCase().replace(/[\s\-\._]/g, "");
 
-      if (heroKey) {
-        let fileName = characters[heroKey];
-        // Capitalize first letter if lowercase, to match filenames like Blade.png
-        if (fileName[0] === fileName[0].toLowerCase()) {
-          fileName = fileName[0].toUpperCase() + fileName.slice(1);
-        }
+  const normalizedHero = normalize(heroName);
+  const heroKey = Object.keys(characters).find(
+    key => normalize(key) === normalizedHero
+  );
 
-        console.log("Loading image:", `images/${fileName}`);
-        // Try capitalized file first, then lowercase fallback
-const upperPath = `images/${fileName.charAt(0).toUpperCase() + fileName.slice(1)}`;
-const lowerPath = `images/${fileName.toLowerCase()}`;
+  if (heroKey) {
+    let fileName = characters[heroKey];
 
-charImgEl.onerror = () => {
-  console.warn("Uppercase version not found, trying lowercase:", lowerPath);
-  charImgEl.src = lowerPath;
-};
+    // Try capitalized filename first, then lowercase fallback
+    const upperPath = `images/${fileName.charAt(0).toUpperCase() + fileName.slice(1)}`;
+    const lowerPath = `images/${fileName.toLowerCase()}`;
 
-charImgEl.src = upperPath;
+    console.log(`Loading image for "${heroName}" → ${upperPath}`);
 
-        charImgEl.style.display = "block";
-        donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
-      } else {
-        console.log("Hero not found:", heroName);
-        charImgEl.style.display = "none";
-        donorTextEl.textContent = "";
-      }
-    }
+    charImgEl.onerror = () => {
+      console.warn("Uppercase not found, trying lowercase:", lowerPath);
+      charImgEl.src = lowerPath;
+    };
+
+    charImgEl.src = upperPath;
+    charImgEl.style.display = "block";
+    donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
+  } else {
+    console.log("Hero not found:", heroName);
+    charImgEl.style.display = "none";
+    donorTextEl.textContent = "";
+  }
+}
 
     window.newDonation = newDonation;
   </script>
