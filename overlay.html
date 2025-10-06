@@ -135,7 +135,17 @@
         }
 
         console.log("Loading image:", `images/${fileName}`);
-        charImgEl.src = `images/${fileName}`;
+        // Try capitalized file first, then lowercase fallback
+const upperPath = `images/${fileName.charAt(0).toUpperCase() + fileName.slice(1)}`;
+const lowerPath = `images/${fileName.toLowerCase()}`;
+
+charImgEl.onerror = () => {
+  console.warn("Uppercase version not found, trying lowercase:", lowerPath);
+  charImgEl.src = lowerPath;
+};
+
+charImgEl.src = upperPath;
+
         charImgEl.style.display = "block";
         donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
       } else {
