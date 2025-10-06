@@ -1,186 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Droopy Hero Overlay – Queue Admin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <title>Droopy Hero Overlay — Queue Admin</title>
   <style>
-    :root {
-      --bg: #0b0b0f;
-      --card: #11121a;
-      --muted: #9aa0aa;
-      --text: #f5f7fa;
-      --accent: #e62429; /* Marvel red */
-      --link: #61dafb;
-      --good: #2ecc71;
-      --warn: #f39c12;
-    }
-    * { box-sizing: border-box; }
     body {
-      margin: 0; background: var(--bg); color: var(--text);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-family: "Poppins", sans-serif;
+      background: #111;
+      color: #eee;
+      margin: 20px;
     }
-    .container { max-width: 980px; margin: 28px auto; padding: 0 16px; }
-    h1 { margin: 0 0 16px; font-size: 28px; letter-spacing: .3px; }
     .card {
-      background: var(--card); border: 1px solid #1b1d29; border-radius: 14px;
-      padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.25);
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    label { display:block; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
-    input[type="text"], input[type="password"] {
-      width: 360px; max-width: 100%;
-      background: #0f1118; color: var(--text);
-      border: 1px solid #2a2e3e; border-radius: 8px; padding: 10px 12px;
-      outline: none;
+    h2 {
+      margin-top: 0;
     }
-    .btn {
-      background: var(--accent); color: white; border: none; border-radius: 10px;
-      padding: 10px 14px; cursor: pointer; font-weight: 600; letter-spacing: .2px;
+    input, button {
+      font-family: inherit;
     }
-    .btn.secondary { background: #2a2e3e; }
-    .btn.good { background: var(--good); }
-    .btn.warn { background: var(--warn); color: #1a1000; }
-    .btn:hover { opacity: .95; }
-    .muted { color: var(--muted); font-size: 13px; }
-    .link { color: var(--link); text-decoration: none; }
-    .grid { display:grid; gap: 10px; grid-template-columns: 1fr; }
-    @media (min-width: 720px) { .grid.two { grid-template-columns: 1fr 1fr; } }
-    ul { list-style: none; padding: 0; margin: 8px 0 0; }
-    li {
-      background: #0f1118; border: 1px solid #2a2e3e; border-radius: 10px;
-      padding: 10px 12px; margin-bottom: 8px;
+    input[type=text] {
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+      width: 200px;
+      margin-right: 10px;
     }
-    .badge {
-      display:inline-block; padding:4px 8px; border-radius: 999px;
-      font-size: 12px; background:#18202f; color:#b9c2d0; border:1px solid #2a3347;
+    button {
+      border: none;
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: bold;
     }
-    .flex-between { display:flex; justify-content: space-between; align-items:center; gap:10px; }
+    .primary { background: #dc3545; color: white; }
+    .secondary { background: #444; color: white; }
+    .green { background: #28a745; color: white; }
+    .yellow { background: #ffc107; color: black; }
     .hidden { display: none !important; }
+
     #setupBody {
-  transition: max-height 0.3s ease-in;
-}
+      transition: max-height 0.3s ease-in;
+    }
+    #setupBody.hidden {
+      max-height: 0;
+      overflow: hidden;
+      padding: 0;
+      transition: max-height 0.3s ease-out;
+    }
 
-#setupBody.hidden {
-  max-height: 0;
-  overflow: hidden;
-  padding: 0;
-  transition: max-height 0.3s ease-out;
-}
-
-    .success { color: var(--good); font-weight: 600; }
-    .divider { height: 1px; background: #1b1d29; margin: 12px 0; border: none; }
-    .pill { background:#18202f; border:1px solid #273149; padding:6px 10px; border-radius:999px; color:#cbd5e1; font-size:12px;}
-    code { background:#0f1118; border:1px solid #2a2e3e; padding:2px 6px; border-radius:6px;}
+    ul { list-style: none; padding: 0; }
+    li {
+      padding: 6px 0;
+      border-bottom: 1px solid #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .timestamp { font-size: 12px; color: #888; }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <h1>Droopy Hero Overlay — Queue Admin</h1>
-
-    <!-- Setup / Onboarding Panel -->
-    <div class="card" id="setupCard">
-      <div class="flex-between">
-        <div>
-          <div class="pill">Setup</div>
-          <p class="muted" style="margin:8px 0 0;">
-            Enter your <strong>Channel ID</strong> (usually your Streamlabs / Twitch username). Optional:
-            paste your <strong>Streamlabs Socket Token</strong> to auto-queue from donations.
-          </p>
-        </div>
-        <button class="btn secondary" id="toggleSetup">Collapse</button>
-      </div>
-
-      <div id="setupBody" style="margin-top:12px;">
-        <div class="grid two">
-          <div>
-            <label>Channel ID</label>
-            <input id="channelId" type="text" placeholder="e.g., droopy2" />
-            <div class="muted">All your data stores under <code>/channels/&lt;yourID&gt;/...</code></div>
-          </div>
-          <div>
-            <label>Streamlabs Socket Token <span class="muted">(optional)</span></label>
-            <input id="slToken" type="password" placeholder="Paste token for auto-queue on donations" />
-            <div class="muted">Leave blank if you’ll add heroes manually.</div>
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:10px;">
-          <button class="btn" id="saveSetup">Save Setup</button>
-          <button class="btn secondary" id="testWrite">Test Firebase</button>
-          <button class="btn secondary" id="connectSL">Connect Streamlabs</button>
-          <span id="setupStatus" class="muted"></span>
-        </div>
-
-        <hr class="divider" />
-
-        <div id="overlayUrlWrap" class="muted">
-          <div>Use this URL in an OBS Browser Source:</div>
-          <div style="margin-top:6px;">
-            <code id="overlayUrl">https://droopy1943.github.io/Hero-picker/overlay.html?channel=demo</code>
-            <button class="btn secondary" id="copyUrl" style="margin-left:8px;">Copy</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Queue Controls -->
-    <div class="card">
-      <div class="flex-between">
-        <div class="pill">Queue</div>
-        <div class="row">
-          <button class="btn good" id="nextHero">Next Hero → Overlay</button>
-          <button class="btn warn" id="clearQueue">Clear Queue</button>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:12px;">
-        <div>
-          <label>Hero name</label>
-          <input id="manualHero" type="text" list="heroes" placeholder="Type or pick a hero…" />
-          <datalist id="heroes">
-            <!-- Common options; text entry still allowed -->
-            <option>Blade</option><option>Iron Man</option><option>Spider-Man</option>
-            <option>Doctor Strange</option><option>Wolverine</option><option>Hulk</option>
-            <option>Captain America</option><option>Scarlet Witch</option><option>Venom</option>
-            <option>Storm</option><option>Magneto</option><option>Moon Knight</option>
-            <option>Black Widow</option><option>Rocket Raccoon</option><option>Groot</option>
-            <option>Thor</option><option>Star-Lord</option><option>Psylocke</option>
-            <option>Phoenix</option><option>Human Torch</option><option>Invisible Woman</option>
-          </datalist>
-        </div>
-        <div>
-          <label>Donor name <span class="muted">(optional)</span></label>
-          <input id="manualDonor" type="text" placeholder="e.g., John" />
-        </div>
-        <div class="row" style="align-self:flex-end;">
-          <button class="btn" id="addManual">Add to Queue</button>
-        </div>
-      </div>
-
-      <ul id="queueList"></ul>
-    </div>
-
-    <!-- Status -->
-    <div class="card">
-      <div class="flex-between">
-        <div class="pill">Status</div>
-        <div id="liveStatus" class="badge">Not connected</div>
-      </div>
-      <p id="log" class="muted" style="margin:10px 0 0; white-space: pre-wrap;"></p>
+  <div class="card">
+    <h2>Setup</h2>
+    <button id="collapseBtn" class="secondary" style="float:right;">Collapse</button>
+    <div id="setupBody">
+      <p>Enter your <b>Channel ID</b> (your Twitch/Streamlabs username):</p>
+      <input type="text" id="channelId" placeholder="Channel ID">
+      <input type="text" id="socketToken" placeholder="Streamlabs Socket Token (optional)">
+      <br><br>
+      <button id="saveSetup" class="primary">Save Setup</button>
+      <button id="testFirebase" class="secondary">Test Firebase</button>
+      <button id="connectStreamlabs" class="secondary">Connect Streamlabs</button>
+      <p>Use this URL for OBS Overlay:</p>
+      <code id="overlayUrl"></code>
     </div>
   </div>
 
-  <!-- socket.io (for Streamlabs) -->
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <div class="card">
+    <h2>Queue</h2>
+    <input type="text" id="heroInput" placeholder="Hero name">
+    <input type="text" id="donorInput" placeholder="Donor name (optional)">
+    <button id="addHero" class="primary">Add to Queue</button>
+    <button id="nextHero" class="green">Next Hero → Overlay</button>
+    <button id="clearQueue" class="yellow">Clear Queue</button>
+    <ul id="queueList"></ul>
+  </div>
 
-  <!-- Firebase (modular SDKs) -->
+  <div class="card">
+    <h2>Status</h2>
+    <p id="status">Idle...</p>
+  </div>
+
+  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import { getDatabase, ref, push, set, onValue, remove, get, child } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-    // TODO: paste your exact Firebase config here (same one that works in overlay & old queue)
+    // ✅ Your real Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
       authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
@@ -191,200 +113,86 @@
       appId: "1:1078364810175:web:fac410007b70b65e348f0a"
     };
 
-    // --- App init ---
     const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
-    const auth = getAuth(app);
-    await signInAnonymously(auth); // required because rules use "auth != null"
+    const db = getDatabase(app);
 
-    // --- DOM helpers ---
-    const $ = (id) => document.getElementById(id);
-    const setupCard = $("setupCard");
-    const setupBody = $("setupBody");
-    const toggleSetupBtn = $("toggleSetup");
-    const channelIdInput = $("channelId");
-    const slTokenInput   = $("slToken");
-    const saveSetupBtn   = $("saveSetup");
-    const testWriteBtn   = $("testWrite");
-    const connectSLBtn   = $("connectSL");
-    const setupStatus    = $("setupStatus");
-    const overlayUrlEl   = $("overlayUrl");
-    const copyUrlBtn     = $("copyUrl");
+    const channelInput = document.getElementById("channelId");
+    const heroInput = document.getElementById("heroInput");
+    const donorInput = document.getElementById("donorInput");
+    const queueList = document.getElementById("queueList");
+    const status = document.getElementById("status");
+    const overlayUrl = document.getElementById("overlayUrl");
 
-    const manualHero  = $("manualHero");
-    const manualDonor = $("manualDonor");
-    const addManualBtn= $("addManual");
-    const nextBtn     = $("nextHero");
-    const clearBtn    = $("clearQueue");
-    const queueList   = $("queueList");
-    const liveStatus  = $("liveStatus");
-    const logEl       = $("log");
+    let currentChannel = localStorage.getItem("channelId") || "demo";
+    channelInput.value = currentChannel;
+    overlayUrl.textContent = `https://droopy1943.github.io/Hero-picker/overlay.html?channel=${currentChannel}`;
 
-    // --- Local config persistence ---
-    const CFG_KEY = "mr_cfg";
-    const cfg = JSON.parse(localStorage.getItem(CFG_KEY) || "{}");
+    const qRef = (ch) => ref(db, `/channels/${ch}/queue`);
+    const curRef = (ch) => ref(db, `/channels/${ch}/current`);
 
-    function currentChannel() {
-      return (channelIdInput.value || "").trim() || "demo";
-    }
-    function qRefFor(cid) { return ref(db, `/channels/${cid}/queue`); }
-    function curRefFor(cid){ return ref(db, `/channels/${cid}/current`); }
+    // ✅ Realtime queue listener
+    onValue(qRef(currentChannel), (snap) => {
+      const data = snap.val() || {};
+      updateQueueDisplay(Object.values(data));
+    });
 
-    function setOverlayUrl() {
-      const cid = currentChannel();
-      overlayUrlEl.textContent = `https://droopy1943.github.io/Hero-picker/overlay.html?channel=${encodeURIComponent(cid)}`;
-    }
-
-    // Load saved cfg
-    if (cfg.channelId) channelIdInput.value = cfg.channelId;
-    if (cfg.slToken)   slTokenInput.value   = cfg.slToken;
-    setOverlayUrl();
-
-    // Setup panel toggle
-    toggleSetupBtn.onclick = () => {
-      const hidden = setupBody.classList.toggle("hidden");
-      toggleSetupBtn.textContent = hidden ? "Expand" : "Collapse";
-    };
-
-    // Save settings
-    saveSetupBtn.onclick = () => {
-      const payload = {
-        channelId: currentChannel(),
-        slToken: slTokenInput.value.trim() || ""
-      };
-      localStorage.setItem(CFG_KEY, JSON.stringify(payload));
-      setOverlayUrl();
-      setupStatus.textContent = "Saved ✔";
-      setupStatus.classList.add("success");
-      setTimeout(()=>{ setupStatus.textContent=""; setupStatus.classList.remove("success");}, 1500);
-      log(`Saved settings for channel: ${payload.channelId}`);
-    };
-
-    copyUrlBtn.onclick = async () => {
-      try {
-        await navigator.clipboard.writeText(overlayUrlEl.textContent);
-        copyUrlBtn.textContent = "Copied!";
-        setTimeout(()=> copyUrlBtn.textContent = "Copy", 1000);
-      } catch(e) { /* ignore */ }
-    };
-
-    // Subscribe & render queue
-    function subscribeQueue() {
-      const cid = currentChannel();
-      onValue(qRefFor(cid), (snap) => {
-        const q = snap.val() || [];
-        renderQueue(q);
-      });
-      liveStatus.textContent = `Listening @ /channels/${cid}/queue`;
-    }
-    subscribeQueue();
-
-    function renderQueue(q) {
+    function updateQueueDisplay(queue = []) {
       queueList.innerHTML = "";
-      q.forEach((item, i) => {
+      queue.forEach((item, idx) => {
         const li = document.createElement("li");
-        li.innerHTML = `<div class="flex-between">
-          <div>#${i+1} — <strong>${sanitize(item.hero || "")}</strong> ${item.donor ? `<span class="muted">by ${sanitize(item.donor)}</span>` : ""} ${item.amount? `<span class="badge">$${item.amount}</span>`:""}</div>
-          <div class="muted">${new Date(item.ts || Date.now()).toLocaleTimeString()}</div>
-        </div>`;
+        li.textContent = `${item.hero} ${item.donor ? `— ${item.donor}` : ""}`;
         queueList.appendChild(li);
       });
     }
 
-    // Manual add
-    addManualBtn.onclick = async () => {
-      const cid = currentChannel();
-      const hero = manualHero.value.trim();
-      const donor = manualDonor.value.trim();
-      if (!hero) { alert("Enter a hero name."); return; }
-
-      const qRef = qRefFor(cid);
-      const snap = await get(qRef);
-      const q = snap.val() || [];
-      q.push({ hero, donor: donor || null, amount: null, ts: Date.now() });
-      await set(qRef, q);
-
-      manualHero.value = "";
-      manualDonor.value = "";
-      log(`Added to queue: ${hero} ${donor?`by ${donor}`:""}`);
-    };
-
-    // Next hero → overlay
-    nextBtn.onclick = async () => {
-      const cid = currentChannel();
-      const qRef = qRefFor(cid);
-      const snap = await get(qRef);
-      const q = snap.val() || [];
-      if (!q.length) { alert("Queue empty."); return; }
-      const next = q.shift();
-      await set(curRefFor(cid), next);
-      await set(qRef, q);
-      log(`Sent to overlay: ${next.hero} ${next.donor?`by ${next.donor}`:""}`);
-    };
-
-    // Clear queue (keeps current)
-    clearBtn.onclick = async () => {
-      if (!confirm("Clear ALL items from the queue?")) return;
-      const cid = currentChannel();
-      await set(qRefFor(cid), []);
-      log("Queue cleared.");
-    };
-
-    // Test write (sanity)
-    testWriteBtn.onclick = async () => {
-      const cid = currentChannel();
-      const test = { hero: "Blade", donor: "Test", ts: Date.now() };
-      const qRef = qRefFor(cid);
-      const snap = await get(qRef);
-      const q = snap.val() || [];
-      q.push(test);
-      await set(qRef, q);
-      log("Test write: added Blade to your queue.");
-      alert("✅ Test wrote to Firebase. Check your queue below.");
-    };
-
-    // Streamlabs connect (optional)
-    let socket;
-    connectSLBtn.onclick = () => {
-      const token = slTokenInput.value.trim();
-      const cid   = currentChannel();
-      if (!token) { alert("Paste your Streamlabs Socket Token first."); return; }
-
-      if (socket?.connected) socket.disconnect();
-
-      socket = io("https://sockets.streamlabs.com", { transports:["websocket"], query: { token } });
-      socket.on("connect", () => log("Streamlabs socket: connected"));
-      socket.on("disconnect", () => log("Streamlabs socket: disconnected"));
-
-      socket.on("event", async (eventData) => {
-        if (eventData.type !== "donation") return;
-
-        const arr = Array.isArray(eventData.message) ? eventData.message : [eventData.message];
-        for (const m of arr) {
-          const name   = m.name || "Anonymous";
-          const amount = Number(m.amount || 0);
-          const note   = (m.message || "").toString();
-          // Expect "I want to request [HeroName]"
-          const match  = note.match(/I\s*want\s*to\s*request\s*\[([^\]]+)\]/i);
-          if (!match) continue;
-
-          const hero = match[1].trim();
-          const qRef = qRefFor(cid);
-          const snap = await get(qRef);
-          const q = snap.val() || [];
-          q.push({ hero, donor: name, amount, ts: Date.now() });
-          await set(qRef, q);
-
-          log(`Donation queued: ${hero} by ${name} ($${amount})`);
-        }
+    document.getElementById("addHero").onclick = async () => {
+      const hero = heroInput.value.trim();
+      const donor = donorInput.value.trim();
+      if (!hero) return;
+      await push(qRef(currentChannel), {
+        hero, donor, ts: Date.now()
       });
-
-      alert("Connected to Streamlabs. Leave this page open during your stream.");
+      heroInput.value = donorInput.value = "";
+      status.textContent = `[${new Date().toLocaleTimeString()}] Added ${hero}`;
     };
 
-    // Helpers
-    function sanitize(s){ return (s||"").replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
-    function log(msg){ logEl.textContent = `[${new Date().toLocaleTimeString()}] ${msg}\n` + (logEl.textContent || ""); }
+    document.getElementById("nextHero").onclick = async () => {
+      const snapshot = await get(qRef(currentChannel));
+      const data = snapshot.val();
+      if (!data) return alert("Queue empty!");
+      const firstKey = Object.keys(data)[0];
+      const firstHero = data[firstKey];
+      await set(curRef(currentChannel), firstHero);
+      await remove(child(qRef(currentChannel), firstKey));
+      status.textContent = `[${new Date().toLocaleTimeString()}] Sent ${firstHero.hero} → Overlay`;
+    };
+
+    document.getElementById("clearQueue").onclick = async () => {
+      if (!confirm("Clear entire queue?")) return;
+      await remove(qRef(currentChannel));
+      updateQueueDisplay([]);
+      status.textContent = `[${new Date().toLocaleTimeString()}] Queue cleared.`;
+    };
+
+    document.getElementById("saveSetup").onclick = () => {
+      currentChannel = channelInput.value.trim() || "demo";
+      localStorage.setItem("channelId", currentChannel);
+      overlayUrl.textContent = `https://droopy1943.github.io/Hero-picker/overlay.html?channel=${currentChannel}`;
+      status.textContent = `[${new Date().toLocaleTimeString()}] Saved settings for channel: ${currentChannel}`;
+    };
+
+    document.getElementById("testFirebase").onclick = async () => {
+      await push(qRef(currentChannel), { hero: "Blade", donor: "Test", ts: Date.now() });
+      status.textContent = `[${new Date().toLocaleTimeString()}] Test data written for channel: ${currentChannel}`;
+    };
+
+    // Collapse button
+    const collapseBtn = document.getElementById("collapseBtn");
+    const setupBody = document.getElementById("setupBody");
+    collapseBtn.addEventListener("click", () => {
+      setupBody.classList.toggle("hidden");
+      collapseBtn.textContent = setupBody.classList.contains("hidden") ? "Expand" : "Collapse";
+    });
   </script>
 </body>
 </html>
