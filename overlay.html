@@ -120,27 +120,22 @@
     const donorTextEl = document.getElementById("donorText");
 
     function newDonation(heroName, donorName = "") {
-      if (heroKey) {
-  const fileName = characters[heroKey];
-  charImgEl.src = `images/${fileName}`;
-  charImgEl.style.display = "block";
-  donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
-} else {
-  console.log("Hero not found:", heroName);
-  charImgEl.style.display = "none";
-  donorTextEl.textContent = "";
-}
-      if(heroKey) {
-        charImgEl.src = `images/${characters[heroKey]}`; // keep as is
-        charImgEl.style.display = "block";
-        donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
-      } else {
-        console.log("Hero not found:", heroName);
-        charImgEl.style.display = "none";
-        donorTextEl.textContent = "";
-      }
-    }
+  // find hero key (case-insensitive)
+  const heroKey = Object.keys(characters).find(
+    key => key.toLowerCase() === heroName.toLowerCase()
+  );
 
+  if (heroKey) {
+    const fileName = characters[heroKey];
+    charImgEl.src = `images/${fileName}`;
+    charImgEl.style.display = "block";
+    donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
+  } else {
+    console.log("Hero not found:", heroName);
+    charImgEl.style.display = "none";
+    donorTextEl.textContent = "";
+  }
+}
     window.newDonation = newDonation;
   </script>
 
@@ -173,7 +168,8 @@
       if (!cur || !cur.hero) return;
 
       console.log("Now showing:", cur.hero, "by", cur.donor || "Anonymous");
-      newDonation(cur.hero.trim().toLowerCase(), cur.donor);
+newDonation(cur.hero.trim(), cur.donor);
+
     });
   </script>
 </body>
