@@ -70,7 +70,7 @@
   </div>
 
   <script>
-    // Map hero names to image filenames
+    // Hero name to file map
     const characters = {
       "Adam Warlock": "adamwarlock.png",
       "Angela": "angela.png",
@@ -120,23 +120,31 @@
     const donorTextEl = document.getElementById("donorText");
 
     function newDonation(heroName, donorName = "") {
-  // find hero key (case-insensitive)
-  const heroKey = Object.keys(characters).find(
-    key => key.toLowerCase() === heroName.toLowerCase()
-  );
+      if (!heroName) return;
 
-  if (heroKey) {
-    const fileName = characters[heroKey];
-    console.log("Loading image:", `images/${fileName}`);
-    charImgEl.src = `images/${fileName}`;
-    charImgEl.style.display = "block";
-    donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
-  } else {
-    console.log("Hero not found:", heroName);
-    charImgEl.style.display = "none";
-    donorTextEl.textContent = "";
-  }
-}
+      const lowerHero = heroName.trim().toLowerCase();
+      const heroKey = Object.keys(characters).find(
+        key => key.toLowerCase() === lowerHero
+      );
+
+      if (heroKey) {
+        let fileName = characters[heroKey];
+        // Capitalize first letter if lowercase, to match filenames like Blade.png
+        if (fileName[0] === fileName[0].toLowerCase()) {
+          fileName = fileName[0].toUpperCase() + fileName.slice(1);
+        }
+
+        console.log("Loading image:", `images/${fileName}`);
+        charImgEl.src = `images/${fileName}`;
+        charImgEl.style.display = "block";
+        donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
+      } else {
+        console.log("Hero not found:", heroName);
+        charImgEl.style.display = "none";
+        donorTextEl.textContent = "";
+      }
+    }
+
     window.newDonation = newDonation;
   </script>
 
@@ -146,7 +154,7 @@
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE", // ⚠️ replace with your real "AIza..." key
+      apiKey: "AIzaSyYOUR_REAL_KEY_HERE",  /* ← paste your real key */
       authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
       databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
       projectId: "marvel-rivals-overlay-7f867",
@@ -169,8 +177,7 @@
       if (!cur || !cur.hero) return;
 
       console.log("Now showing:", cur.hero, "by", cur.donor || "Anonymous");
-newDonation(cur.hero.trim(), cur.donor);
-
+      newDonation(cur.hero.trim(), cur.donor);
     });
   </script>
 </body>
