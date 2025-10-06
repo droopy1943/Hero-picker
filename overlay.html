@@ -120,10 +120,16 @@
     const donorTextEl = document.getElementById("donorText");
 
     function newDonation(heroName, donorName = "") {
-      const heroKey = Object.keys(characters).find(
-        key => key.toLowerCase() === heroName.toLowerCase()
-      );
-
+      if (heroKey) {
+  const fileName = characters[heroKey];
+  charImgEl.src = `images/${fileName}`;
+  charImgEl.style.display = "block";
+  donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
+} else {
+  console.log("Hero not found:", heroName);
+  charImgEl.style.display = "none";
+  donorTextEl.textContent = "";
+}
       if(heroKey) {
         charImgEl.src = `images/${characters[heroKey]}`; // keep as is
         charImgEl.style.display = "block";
@@ -167,7 +173,7 @@
       if (!cur || !cur.hero) return;
 
       console.log("Now showing:", cur.hero, "by", cur.donor || "Anonymous");
-      newDonation(cur.hero, cur.donor);
+      newDonation(cur.hero.trim().toLowerCase(), cur.donor);
     });
   </script>
 </body>
