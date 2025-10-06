@@ -10,7 +10,6 @@
     overflow: hidden;
   }
 
-  /* Overlay container centers everything */
   .overlay {
     display: flex;
     align-items: center;
@@ -18,36 +17,45 @@
     height: 100vh;
   }
 
-  /* Wrapper for hero + border (5% bigger) */
   .char-wrapper {
     position: relative;
     display: inline-block;
-    width: calc(400px * 1.05);   /* hero width + 5% */
-    height: calc(250px * 1.05);   /* hero height + 5% */
+    width: calc(400px * 1.05);
+    height: calc(250px * 1.05);
     margin: 0 auto;
-    overflow: visible; /* allows border to extend slightly */
+    overflow: visible;
   }
 
-  /* Hero image */
   #charImg {
     display: block;
-    width: 100%;    /* fill wrapper */
+    width: 100%;
     height: 100%;
     object-fit: contain;
     position: relative;
     z-index: 1;
   }
 
-  /* Border scaled relative to wrapper */
   #borderImg {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-52%, -52%) rotate(3deg); /* optional tilt */
-    width: 135%;   /* slightly bigger than hero to frame it */
+    transform: translate(-52%, -52%) rotate(3deg);
+    width: 135%;
     height: 138%;
     z-index: 2;
     pointer-events: none;
+  }
+
+  #donorText {
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-family: "Comic Sans MS", sans-serif;
+    font-size: 22px;
+    text-shadow: 2px 2px 4px #000;
+    z-index: 3;
   }
 </style>
 </head>
@@ -57,145 +65,110 @@
     <div class="char-wrapper">
       <img id="charImg" alt="Hero Image">
       <img id="borderImg" src="images/comic_border.png" alt="Border Image">
+      <div id="donorText"></div>
     </div>
   </div>
 
   <script>
     // Map hero names to image filenames
     const characters = {
-  "Adam Warlock": "adamwarlock.png",
-  "Angela": "angela.png",
-  "Black Panther": "blackpanther.png",
-  "Black Widow": "blackwidow.png",
-  "Blade": "blade.png",
-  "Captain America": "captainamerica.png",
-  "Cloak & Dagger": "cloakanddagger.png",
-  "Doctor Strange": "doctorstrange.png",
-  "Emma Frost": "emmafrost.png",
-  "Groot": "groot.png",
-  "Hawkeye": "hawkeye.png",
-  "Hela": "hela.png",
-  "Hulk": "hulk.png",
-  "Human Torch": "humantorch.png",
-  "Invisible Woman": "invisiblewoman.png",
-  "Iron Fist": "ironfist.png",
-  "Iron Man": "ironman.png",
-  "Jeff the Land Shark": "jeffthelandshark.png",
-  "Loki": "loki.png",
-  "Luna Snow": "lunasnow.png",
-  "Magik": "magik.png",
-  "Magneto": "magneto.png",
-  "Mantis": "mantis.png",
-  "Mister Fantastic": "misterfantastic.png",
-  "Moon Knight": "moonknight.png",
-  "Namor": "namor.png",
-  "Peni Parker": "peniparker.png",
-  "Phoenix": "phoenix.png",
-  "Psylocke": "psylocke.png",
-  "The Punisher": "thepunisher.png",
-  "The Thing": "thething.png",
-  "Rocket Raccoon": "rocketraccoon.png",
-  "Scarlet Witch": "scarletwitch.png",
-  "Squirrel Girl": "squirrelgirl.png",
-  "Spider-Man": "spiderman.png",
-  "Star-Lord": "starlord.png",
-  "Storm": "storm.png",
-  "Thor": "thor.png",
-  "Ultron": "ultron.png",
-  "Venom": "venom.png",
-  "Winter Soldier": "wintersoldier.png",
-  "Wolverine": "wolverine.png"
-};
-
+      "Adam Warlock": "adamwarlock.png",
+      "Angela": "angela.png",
+      "Black Panther": "blackpanther.png",
+      "Black Widow": "blackwidow.png",
+      "Blade": "blade.png",
+      "Captain America": "captainamerica.png",
+      "Cloak & Dagger": "cloakanddagger.png",
+      "Doctor Strange": "doctorstrange.png",
+      "Emma Frost": "emmafrost.png",
+      "Groot": "groot.png",
+      "Hawkeye": "hawkeye.png",
+      "Hela": "hela.png",
+      "Hulk": "hulk.png",
+      "Human Torch": "humantorch.png",
+      "Invisible Woman": "invisiblewoman.png",
+      "Iron Fist": "ironfist.png",
+      "Iron Man": "ironman.png",
+      "Jeff the Land Shark": "jeffthelandshark.png",
+      "Loki": "loki.png",
+      "Luna Snow": "lunasnow.png",
+      "Magik": "magik.png",
+      "Magneto": "magneto.png",
+      "Mantis": "mantis.png",
+      "Mister Fantastic": "misterfantastic.png",
+      "Moon Knight": "moonknight.png",
+      "Namor": "namor.png",
+      "Peni Parker": "peniparker.png",
+      "Phoenix": "phoenix.png",
+      "Psylocke": "psylocke.png",
+      "The Punisher": "thepunisher.png",
+      "The Thing": "thething.png",
+      "Rocket Raccoon": "rocketraccoon.png",
+      "Scarlet Witch": "scarletwitch.png",
+      "Squirrel Girl": "squirrelgirl.png",
+      "Spider-Man": "spiderman.png",
+      "Star-Lord": "starlord.png",
+      "Storm": "storm.png",
+      "Thor": "thor.png",
+      "Ultron": "ultron.png",
+      "Venom": "venom.png",
+      "Winter Soldier": "wintersoldier.png",
+      "Wolverine": "wolverine.png"
+    };
 
     const charImgEl = document.getElementById("charImg");
+    const donorTextEl = document.getElementById("donorText");
 
-    function newDonation(heroName) {
-  // Find matching key ignoring case
-  const heroKey = Object.keys(characters).find(
-    key => key.toLowerCase() === heroName.toLowerCase()
-  );
+    function newDonation(heroName, donorName = "") {
+      const heroKey = Object.keys(characters).find(
+        key => key.toLowerCase() === heroName.toLowerCase()
+      );
 
-  if(heroKey) {
-    charImgEl.src = `images/${characters[heroKey]}`;
-    charImgEl.style.display = "block";
-  } else {
-    console.log("Hero not found:", heroName);
-    charImgEl.style.display = "none";
-  }
-}
-
-
+      if(heroKey) {
+        charImgEl.src = `images/${characters[heroKey]}`;
+        charImgEl.style.display = "block";
+        donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
+      } else {
+        console.log("Hero not found:", heroName);
+        charImgEl.style.display = "none";
+        donorTextEl.textContent = "";
+      }
+    }
 
     window.newDonation = newDonation;
   </script>
-  <!-- Firebase live connection -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-  // Your Firebase config
-  const firebaseConfig = {
-    apiKey: "ATzaSyASjflh3w3UQHrY1wmwD5Z7aXfjMjvYtNE",
-    authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
-    databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
-    projectId: "marvel-rivals-overlay-7f867",
-    storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
-    messagingSenderId: "1078364810175",
-    appId: "1:1078364810175:web:fac410007b70b65e348f0a"
-  };
+  <!-- Firebase listener -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-  const app = initializeApp(firebaseConfig);
-  const db  = getDatabase(app);
+    const firebaseConfig = {
+      apiKey: "AIzaSyXXXXXXXXXXXXXX", // ⚠️ replace with your real "AIza..." key
+      authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
+      databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+      projectId: "marvel-rivals-overlay-7f867",
+      storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
+      messagingSenderId: "1078364810175",
+      appId: "1:1078364810175:web:fac410007b70b65e348f0a"
+    };
 
-  // Get the channel ID from URL (like ?channel=droopy2)
-  const params = new URLSearchParams(location.search);
-  const channelId = params.get("channel") || "demo";
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-  // Grab your existing HTML elements
-  const heroImg   = document.getElementById("hero-image");
-  const donorText = document.getElementById("donor-text");
-  const borderImg = document.getElementById("comic-border");
+    const params = new URLSearchParams(location.search);
+    const channelId = params.get("channel") || "demo";
 
-  const fallbackBase = "./images";
+    const charImgEl = document.getElementById("charImg");
+    const donorTextEl = document.getElementById("donorText");
 
-  // Listen for updates in Firebase
-  onValue(ref(db, `/channels/${channelId}/current`), (snap) => {
-    const cur = snap.val();
-    if (!cur || !cur.hero) return;
+    onValue(ref(db, `/channels/${channelId}/current`), (snap) => {
+      const cur = snap.val();
+      if (!cur || !cur.hero) return;
 
-    const base = (cur.settings && cur.settings.imageBaseUrl) || fallbackBase;
-    const file = `${cur.hero.replace(/\s+/g, '_')}.png`;
-
-    if (heroImg) heroImg.src = `${base}/${file}`;
-    if (donorText) donorText.textContent = cur.donor ? `Requested by ${cur.donor}` : "";
-    if (borderImg && !borderImg.src) borderImg.src = `${base}/comic_border.png`;
-  });
-</script>
-
+      console.log("Now showing:", cur.hero, "by", cur.donor || "Anonymous");
+      newDonation(cur.hero, cur.donor);
+    });
+  </script>
 </body>
 </html>
-<script src="https://cdn.jsdelivr.net/npm/@streamlabs/streamlabs-obs-browser@1.0.0/dist/streamlabs.min.js"></script>
-<script>
-  // Listen for Streamlabs donation events
-  const slClient = new Streamlabs();
-  slClient.on('donation', function(data) {
-    // Expect the message to contain the hero, e.g., "I want to request Thor"
-    const message = data.message || "";
-    const heroMatch = message.match(/request (\w[\w\s\-]*)/i);
-    if(heroMatch) {
-      const hero = heroMatch[1];
-      console.log("Donation hero detected:", hero);
-      newDonation(hero); // This calls your existing function
-    }
-  });
-</script>
-<script>
-  // Temporary test function to simulate a hero selection
-  function testHero(heroName) {
-    newDonation(heroName);
-  }
-
-  // Expose globally so you can call it in the console
-  window.testHero = testHero;
-</script>
