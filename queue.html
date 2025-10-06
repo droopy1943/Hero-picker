@@ -1,200 +1,218 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Hero Queue Manager</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>
-  :root { color-scheme: dark; }
-  body { font-family: Arial, sans-serif; margin: 20px; background:#111; color:#fff; }
-  h1 { margin: 0 0 12px 0; }
-  .row { display:flex; flex-wrap: wrap; align-items:center; gap:8px; margin-bottom:10px; }
-  select, input, button { padding:8px; border-radius:6px; border:1px solid #333; background:#1b1b1b; color:#fff; }
-  button { background:#ffcc00; color:#111; border:none; font-weight:bold; cursor:pointer; }
-  button:hover { background:#ffaa00; }
-  .panel { background:#151515; border:1px solid #2a2a2a; border-radius:8px; padding:12px; margin-top:12px; }
-  ul { list-style:none; padding:0; margin:0; }
-  li { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px; border-bottom:1px solid #2a2a2a; }
-  .small { font-size:12px; color:#bbb; }
-  .spacer { flex: 1; }
-  .danger { background:#ff5b5b; color:#111; }
-  .danger:hover { background:#ff3c3c; }
-  .pill { padding:2px 8px; background:#222; border-radius:999px; border:1px solid #333; }
-</style>
+  <meta charset="UTF-8" />
+  <title>Marvel Rivals Queue Admin</title>
+  <style>
+    body {
+      font-family: system-ui, Arial, sans-serif;
+      background: #0a0a0a;
+      color: #f2f2f2;
+      padding: 20px;
+    }
+    h1 { color: #e62429; }
+    label { display:block; margin-top: 10px; }
+    input {
+      width: 350px;
+      padding: 6px;
+      border-radius: 4px;
+      border: none;
+      outline: none;
+    }
+    button {
+      padding: 8px 14px;
+      margin-top: 10px;
+      border: none;
+      background: #e62429;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover { opacity: 0.9; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    ul { list-style:none; padding-left:0; }
+    li { background:#111; padding:8px 10px; border-radius:6px; margin:6px 0; }
+    a { color:#61dafb; text-decoration:none; }
+  </style>
 </head>
 <body>
-  <h1>Hero Queue Manager</h1>
+  <h1>Marvel Rivals Queue Admin</h1>
 
-  <div class="panel">
+  <div>
+    <label>Channel ID (your Twitch or Streamlabs username)
+      <input id="channelId" placeholder="droopy2" />
+    </label>
+    <label>Streamlabs Socket Token (keep private)
+      <input id="slToken" placeholder="Paste your token here" />
+    </label>
     <div class="row">
-      <label for="heroSelect">Add hero:</label>
-      <select id="heroSelect"></select>
-      <button id="addBtn">Add Hero</button>
-      <div class="spacer"></div>
-      <button id="nextBtn">Next Hero ▶</button>
-      <button id="clearBtn" class="danger">Clear Queue</button>
-    </div>
-    <div class="row small">
-      <span>Overlay status: <span id="overlayStatus" class="pill">not opened</span></span>
-      <div class="spacer"></div>
-      <button id="openOverlayBtn">Open overlay.html</button>
+      <button id="save">Save</button>
+      <button id="connect">Connect Streamlabs</button>
+      <a id="openOverlay" target="_blank">Open Overlay</a>
     </div>
   </div>
 
-  <div class="panel">
-    <div class="row">
-      <strong>Current Queue</strong>
-      <div class="spacer"></div>
-      <span class="small">Count: <span id="count">0</span></span>
-    </div>
-    <ul id="queueList"></ul>
+  <hr />
+
+  <div class="row">
+    <input id="manualHero" placeholder="Hero name (manual add)" />
+    <input id="manualDonor" placeholder="Donor name (optional)" />
+    <button id="addManual">Add to Queue</button>
   </div>
 
-<script>
-/* ---------- Config: your hero list (names must match overlay mapping/images) ---------- */
-const HEROES = [
-  "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America",
-  "Cloak & Dagger","Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk",
-  "Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark","Loki",
-  "Luna Snow","Magik","Magneto","Mantis","Mister Fantastic","Moon Knight","Namor",
-  "Peni Parker","Phoenix","Psylocke","The Punisher","The Thing","Rocket Raccoon",
-  "Scarlet Witch","Squirrel Girl","Spider-Man","Star-Lord","Storm","Thor","Ultron",
-  "Venom","Winter Soldier","Wolverine"
-];
+  <h2>Queue</h2>
+  <button id="nextHero">Next Hero → Send to Overlay</button>
+  <ul id="queueList"></ul>
 
-/* ---------- State ---------- */
-let queue = [];
-let overlayWindow = null;
+  <!-- Streamlabs socket.io client -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
-/* ---------- DOM ---------- */
-const heroSelect = document.getElementById('heroSelect');
-const addBtn = document.getElementById('addBtn');
-const nextBtn = document.getElementById('nextBtn');
-const clearBtn = document.getElementById('clearBtn');
-const openOverlayBtn = document.getElementById('openOverlayBtn');
-const overlayStatusEl = document.getElementById('overlayStatus');
-const queueList = document.getElementById('queueList');
-const countEl = document.getElementById('count');
+  <!-- Firebase integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getDatabase, ref, push, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
-/* ---------- Init dropdown ---------- */
-function populateDropdown() {
-  heroSelect.innerHTML = '';
-  HEROES.forEach(name => {
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name;
-    heroSelect.appendChild(opt);
-  });
-}
-
-/* ---------- Persistence ---------- */
-function loadQueue() {
-  try {
-    queue = JSON.parse(localStorage.getItem('heroQueue')) || [];
-  } catch {
-    queue = [];
-  }
-}
-
-function saveQueue() {
-  localStorage.setItem('heroQueue', JSON.stringify(queue));
-}
-
-/* ---------- Render ---------- */
-function renderQueue() {
-  queueList.innerHTML = '';
-  queue.forEach((name, idx) => {
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <span>${idx+1}. ${name}</span>
-      <span>
-        <button data-idx="${idx}" class="upBtn">↑</button>
-        <button data-idx="${idx}" class="downBtn">↓</button>
-        <button data-idx="${idx}" class="danger delBtn">Remove</button>
-      </span>
-    `;
-    queueList.appendChild(li);
-  });
-  countEl.textContent = queue.length;
-
-  // row controls
-  queueList.querySelectorAll('.delBtn').forEach(btn => {
-    btn.onclick = () => {
-      const i = Number(btn.dataset.idx);
-      queue.splice(i,1);
-      saveQueue(); renderQueue();
+    // ✅ Your Firebase config
+    const firebaseConfig = {
+      apiKey: "ATzaSyASjflh3w3UQHrY1wmwD5Z7aXfjMjvYtNE",
+      authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
+      databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+      projectId: "marvel-rivals-overlay-7f867",
+      storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
+      messagingSenderId: "1078364810175",
+      appId: "1:1078364810175:web:fac410007b70b65e348f0a"
     };
-  });
-  queueList.querySelectorAll('.upBtn').forEach(btn => {
-    btn.onclick = () => {
-      const i = Number(btn.dataset.idx);
-      if (i>0) [queue[i-1], queue[i]] = [queue[i], queue[i-1]];
-      saveQueue(); renderQueue();
-    };
-  });
-  queueList.querySelectorAll('.downBtn').forEach(btn => {
-    btn.onclick = () => {
-      const i = Number(btn.dataset.idx);
-      if (i<queue.length-1) [queue[i+1], queue[i]] = [queue[i], queue[i+1]];
-      saveQueue(); renderQueue();
-    };
-  });
-}
 
-/* ---------- Overlay ---------- */
-/* Assumes overlay.html is in the SAME folder as this queue.html.
-   If not, change the URL below. */
-function openOverlay() {
-  try {
-    if (!overlayWindow || overlayWindow.closed) {
-      overlayWindow = window.open('overlay.html', 'Overlay', 'width=900,height=700');
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+    const auth = getAuth(app);
+    await signInAnonymously(auth);
+
+    // DOM references
+    const el = id => document.getElementById(id);
+    const channelIdInput = el("channelId");
+    const slTokenInput   = el("slToken");
+    const saveBtn        = el("save");
+    const connectBtn     = el("connect");
+    const openOverlayA   = el("openOverlay");
+    const addManualBtn   = el("addManual");
+    const nextBtn        = el("nextHero");
+    const queueList      = el("queueList");
+    const manualHero     = el("manualHero");
+    const manualDonor    = el("manualDonor");
+
+    // Load saved settings
+    const cfg = JSON.parse(localStorage.getItem("mr_cfg") || "{}");
+    if (cfg.channelId) channelIdInput.value = cfg.channelId;
+    if (cfg.slToken)   slTokenInput.value   = cfg.slToken;
+
+    function refreshOverlayLink() {
+      const cid = channelIdInput.value.trim() || "demo";
+      openOverlayA.href = `overlay.html?channel=${encodeURIComponent(cid)}`;
+      openOverlayA.textContent = "Open Overlay";
     }
-    overlayStatusEl.textContent = overlayWindow && !overlayWindow.closed ? 'open' : 'not opened';
-  } catch (e) {
-    overlayStatusEl.textContent = 'blocked (pop-up?)';
-  }
-}
+    refreshOverlayLink();
 
-function sendToOverlay(heroName) {
-  if (!overlayWindow || overlayWindow.closed) {
-    openOverlay();
-  }
-  // Message payload your overlay is already listening for (we set this up earlier)
-  // In overlay, you’re handling postMessage and calling newDonation(heroName)
-  try {
-    overlayWindow.postMessage({ hero: heroName }, '*');
-  } catch (e) {
-    console.warn('postMessage failed:', e);
-  }
-}
+    saveBtn.onclick = () => {
+      const newCfg = {
+        channelId: channelIdInput.value.trim(),
+        slToken: slTokenInput.value.trim()
+      };
+      localStorage.setItem("mr_cfg", JSON.stringify(newCfg));
+      refreshOverlayLink();
+      alert("Saved!");
+    };
 
-/* ---------- Actions ---------- */
-addBtn.onclick = () => {
-  const name = heroSelect.value;
-  if (!name) return;
-  queue.push(name);
-  saveQueue(); renderQueue();
-};
+    // Live queue updates
+    function subscribeQueue() {
+      const cid = channelIdInput.value.trim() || "demo";
+      onValue(ref(db, `/channels/${cid}/queue`), (snap) => {
+        const q = snap.val() || [];
+        queueList.innerHTML = "";
+        q.forEach((item, idx) => {
+          const li = document.createElement("li");
+          li.textContent = `#${idx+1} — ${item.hero}` +
+            (item.donor ? ` by ${item.donor}` : "") +
+            (item.amount ? ` ($${item.amount})` : "");
+          queueList.appendChild(li);
+        });
+      });
+    }
+    subscribeQueue();
 
-nextBtn.onclick = () => {
-  if (queue.length === 0) return alert('Queue is empty!');
-  const next = queue.shift();
-  saveQueue(); renderQueue();
-  sendToOverlay(next);
-};
+    // Manual Add
+    addManualBtn.onclick = async () => {
+      const cid = channelIdInput.value.trim() || "demo";
+      const hero = manualHero.value.trim();
+      const donor = manualDonor.value.trim();
+      if (!hero) return alert("Enter a hero name.");
+      const qRef = ref(db, `/channels/${cid}/queue`);
+      const snap = await get(qRef);
+      const q = snap.val() || [];
+      q.push({ hero, donor: donor || null, ts: Date.now() });
+      await set(qRef, q);
+      manualHero.value = "";
+      manualDonor.value = "";
+    };
 
-clearBtn.onclick = () => {
-  if (!confirm('Clear the whole queue?')) return;
-  queue = [];
-  saveQueue(); renderQueue();
-};
+    // Next Hero (move to overlay)
+    nextBtn.onclick = async () => {
+      const cid = channelIdInput.value.trim() || "demo";
+      const qRef = ref(db, `/channels/${cid}/queue`);
+      const curRef = ref(db, `/channels/${cid}/current`);
+      const snap = await get(qRef);
+      const q = snap.val() || [];
+      if (!q.length) return alert("Queue empty.");
+      const next = q.shift();
+      await set(curRef, next);
+      await set(qRef, q);
+    };
 
-openOverlayBtn.onclick = openOverlay;
+    // Streamlabs socket connection
+    let socket;
+    connectBtn.onclick = () => {
+      const token = slTokenInput.value.trim();
+      const cid   = channelIdInput.value.trim() || "demo";
+      if (!token) return alert("Paste your Streamlabs Socket Token first.");
 
-/* ---------- Boot ---------- */
-populateDropdown();
-loadQueue();
-renderQueue();
-</script>
+      if (socket && socket.connected) socket.disconnect();
+
+      socket = io("https://sockets.streamlabs.com", {
+        transports: ["websocket"],
+        query: { token }
+      });
+
+      socket.on("connect", () => console.log("✅ Streamlabs socket connected"));
+      socket.on("disconnect", () => console.log("❌ Streamlabs socket disconnected"));
+
+      socket.on("event", async (eventData) => {
+        if (eventData.type !== "donation") return;
+
+        const arr = Array.isArray(eventData.message)
+          ? eventData.message
+          : [eventData.message];
+
+        for (const m of arr) {
+          const name   = m.name || "Anonymous";
+          const amount = m.amount || 0;
+          const note   = (m.message || "").toString();
+          const match  = note.match(/I\s*want\s*to\s*request\s*\[([^\]]+)\]/i);
+          if (!match) continue;
+
+          const hero = match[1].trim();
+          const qRef = ref(db, `/channels/${cid}/queue`);
+          const snap = await get(qRef);
+          const q = snap.val() || [];
+          q.push({ hero, donor: name, amount: Number(amount), ts: Date.now() });
+          await set(qRef, q);
+          console.log(`🦸 Added: ${hero} by ${name}`);
+        }
+      });
+
+      alert("Connected to Streamlabs! Leave this page open while streaming.");
+    };
+  </script>
 </body>
 </html>
