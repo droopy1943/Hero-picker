@@ -129,6 +129,50 @@
 
     window.newDonation = newDonation;
   </script>
+  <!-- Firebase live connection -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+
+  // Your Firebase config
+  const firebaseConfig = {
+    apiKey: "ATzaSyASjflh3w3UQHrY1wmwD5Z7aXfjMjvYtNE",
+    authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
+    databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+    projectId: "marvel-rivals-overlay-7f867",
+    storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
+    messagingSenderId: "1078364810175",
+    appId: "1:1078364810175:web:fac410007b70b65e348f0a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  // Get the channel ID from URL (like ?channel=droopy2)
+  const params = new URLSearchParams(location.search);
+  const channelId = params.get("channel") || "demo";
+
+  // Grab your existing HTML elements
+  const heroImg   = document.getElementById("hero-image");
+  const donorText = document.getElementById("donor-text");
+  const borderImg = document.getElementById("comic-border");
+
+  const fallbackBase = "./images";
+
+  // Listen for updates in Firebase
+  onValue(ref(db, `/channels/${channelId}/current`), (snap) => {
+    const cur = snap.val();
+    if (!cur || !cur.hero) return;
+
+    const base = (cur.settings && cur.settings.imageBaseUrl) || fallbackBase;
+    const file = `${cur.hero.replace(/\s+/g, '_')}.png`;
+
+    if (heroImg) heroImg.src = `${base}/${file}`;
+    if (donorText) donorText.textContent = cur.donor ? `Requested by ${cur.donor}` : "";
+    if (borderImg && !borderImg.src) borderImg.src = `${base}/comic_border.png`;
+  });
+</script>
+
 </body>
 </html>
 <script src="https://cdn.jsdelivr.net/npm/@streamlabs/streamlabs-obs-browser@1.0.0/dist/streamlabs.min.js"></script>
