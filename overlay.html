@@ -125,7 +125,7 @@
       );
 
       if(heroKey) {
-        charImgEl.src = `images/${characters[heroKey]}`;
+        charImgEl.src = `images/${characters[heroKey]}`; // keep as is
         charImgEl.style.display = "block";
         donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
       } else {
