@@ -57,6 +57,17 @@
     }
     .flex-between { display:flex; justify-content: space-between; align-items:center; gap:10px; }
     .hidden { display: none !important; }
+    #setupBody {
+  transition: max-height 0.3s ease-in;
+}
+
+#setupBody.hidden {
+  max-height: 0;
+  overflow: hidden;
+  padding: 0;
+  transition: max-height 0.3s ease-out;
+}
+
     .success { color: var(--good); font-weight: 600; }
     .divider { height: 1px; background: #1b1d29; margin: 12px 0; border: none; }
     .pill { background:#18202f; border:1px solid #273149; padding:6px 10px; border-radius:999px; color:#cbd5e1; font-size:12px;}
