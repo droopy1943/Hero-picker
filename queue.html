@@ -97,12 +97,10 @@
     <p id="status">Idle...</p>
   </div>
 
-  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, push, set, onValue, remove, get, child } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-    // ✅ Your real Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
       authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
@@ -123,20 +121,14 @@
     const status = document.getElementById("status");
     const overlayUrl = document.getElementById("overlayUrl");
 
+    let queue = [];
     let currentChannel = localStorage.getItem("channelId") || "demo";
     channelInput.value = currentChannel;
     overlayUrl.textContent = `https://droopy1943.github.io/Hero-picker/overlay.html?channel=${currentChannel}`;
 
-    const qRef = (ch) => ref(db, `/channels/${ch}/queue`);
-    const curRef = (ch) => ref(db, `/channels/${ch}/current`);
+    const qRef = ref(db, `/channels/${currentChannel}/queue`);
 
-    // ✅ Realtime queue listener
-    onValue(qRef(currentChannel), (snap) => {
-      const data = snap.val() || {};
-      updateQueueDisplay(Object.values(data));
-    });
-
-    function updateQueueDisplay(queue = []) {
+    function updateQueueDisplay() {
       queueList.innerHTML = "";
       queue.forEach((item, idx) => {
         const li = document.createElement("li");
@@ -145,32 +137,27 @@
       });
     }
 
-    document.getElementById("addHero").onclick = async () => {
+    document.getElementById("addHero").onclick = () => {
       const hero = heroInput.value.trim();
       const donor = donorInput.value.trim();
       if (!hero) return;
-      await push(qRef(currentChannel), {
-        hero, donor, ts: Date.now()
-      });
+      queue.push({ hero, donor });
+      updateQueueDisplay();
       heroInput.value = donorInput.value = "";
       status.textContent = `[${new Date().toLocaleTimeString()}] Added ${hero}`;
     };
 
-    document.getElementById("nextHero").onclick = async () => {
-      const snapshot = await get(qRef(currentChannel));
-      const data = snapshot.val();
-      if (!data) return alert("Queue empty!");
-      const firstKey = Object.keys(data)[0];
-      const firstHero = data[firstKey];
-      await set(curRef(currentChannel), firstHero);
-      await remove(child(qRef(currentChannel), firstKey));
-      status.textContent = `[${new Date().toLocaleTimeString()}] Sent ${firstHero.hero} → Overlay`;
+    document.getElementById("nextHero").onclick = () => {
+      if (!queue.length) return alert("Queue empty!");
+      const next = queue.shift();
+      updateQueueDisplay();
+      status.textContent = `[${new Date().toLocaleTimeString()}] Sent ${next.hero} → Overlay`;
     };
 
-    document.getElementById("clearQueue").onclick = async () => {
+    document.getElementById("clearQueue").onclick = () => {
       if (!confirm("Clear entire queue?")) return;
-      await remove(qRef(currentChannel));
-      updateQueueDisplay([]);
+      queue = [];
+      updateQueueDisplay();
       status.textContent = `[${new Date().toLocaleTimeString()}] Queue cleared.`;
     };
 
@@ -182,11 +169,11 @@
     };
 
     document.getElementById("testFirebase").onclick = async () => {
-      await push(qRef(currentChannel), { hero: "Blade", donor: "Test", ts: Date.now() });
+      await push(qRef, { hero: "Blade", donor: "Test", ts: Date.now() });
       status.textContent = `[${new Date().toLocaleTimeString()}] Test data written for channel: ${currentChannel}`;
     };
 
-    // Collapse button
+    // Collapse toggle
     const collapseBtn = document.getElementById("collapseBtn");
     const setupBody = document.getElementById("setupBody");
     collapseBtn.addEventListener("click", () => {
