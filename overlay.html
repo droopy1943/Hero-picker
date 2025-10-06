@@ -127,6 +127,7 @@
 
   if (heroKey) {
     const fileName = characters[heroKey];
+    console.log("Loading image:", `images/${fileName}`);
     charImgEl.src = `images/${fileName}`;
     charImgEl.style.display = "block";
     donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
