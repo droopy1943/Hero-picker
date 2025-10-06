@@ -126,6 +126,32 @@
 
     const charImgEl = document.getElementById("charImg");
     const donorTextEl = document.getElementById("donorText");
+// Common nicknames / aliases mapping
+const aliases = {
+  "cap": "Captain America",
+  "captain": "Captain America",
+  "ironman": "Iron Man",
+  "tony": "Iron Man",
+  "stark": "Iron Man",
+  "spidey": "Spider-Man",
+  "spiderman": "Spider-Man",
+  "peter": "Spider-Man",
+  "logan": "Wolverine",
+  "wolv": "Wolverine",
+  "punisher": "The Punisher",
+  "frank": "The Punisher",
+  "bucky": "Winter Soldier",
+  "soldier": "Winter Soldier",
+  "nat": "Black Widow",
+  "widow": "Black Widow",
+  "hulk": "Hulk",
+  "bruce": "Hulk",
+  "doc": "Doctor Strange",
+  "drstrange": "Doctor Strange",
+  "mag": "Magneto",
+  "star": "Star-Lord",
+  "starlord": "Star-Lord"
+};
 
     function newDonation(heroName, donorName = "") {
   if (!heroName) return;
@@ -133,10 +159,17 @@
   // Normalize hero names: lowercase, strip spaces, hyphens, and punctuation
   const normalize = str => str.toLowerCase().replace(/[\s\-\._]/g, "");
 
-  const normalizedHero = normalize(heroName);
+  let normalizedHero = normalize(heroName);
+
+  // Check aliases first
+  if (aliases[normalizedHero]) {
+    normalizedHero = normalize(aliases[normalizedHero]);
+  }
+
   const heroKey = Object.keys(characters).find(
     key => normalize(key) === normalizedHero
   );
+
 
   if (heroKey) {
     let fileName = characters[heroKey];
