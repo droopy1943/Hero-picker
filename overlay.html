@@ -127,28 +127,30 @@
     const donorTextEl = document.getElementById("donorText");
 
     function newDonation(heroName, donorName = "") {
-      if (!heroName) return;
+  if (!heroName) return;
 
-      const heroKey = Object.keys(characters).find(
-        key => key.toLowerCase() === heroName.trim().toLowerCase()
-      );
+  const lowerHero = heroName.trim().toLowerCase();
+  const heroKey = Object.keys(characters).find(
+    key => key.toLowerCase() === lowerHero
+  );
 
-      if (heroKey) {
-        const fileName = characters[heroKey];
-        const path = `images/${fileName}`;
-        console.log("✅ Showing hero image:", path);
-        charImgEl.src = path;
-        charImgEl.classList.remove("default-placeholder");
-        charImgEl.style.display = "block";
-        donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
-      } else {
-        console.warn("Hero not found:", heroName);
-        charImgEl.src = "images/default_hero.png";
-        charImgEl.classList.add("default-placeholder");
-        donorTextEl.textContent = "Pick a Hero!";
-      }
+  if (heroKey) {
+    let fileName = characters[heroKey];
+    if (fileName[0] === fileName[0].toLowerCase()) {
+      fileName = fileName[0].toUpperCase() + fileName.slice(1);
     }
 
+    console.log("Loading image:", `images/${fileName}`);
+    charImgEl.src = `images/${fileName}`;
+    charImgEl.style.display = "block";
+    donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
+  } else {
+    console.warn("Hero not found:", heroName, "→ showing pickahero.png fallback");
+    charImgEl.src = "images/pickahero.png";  // <--- new fallback image
+    charImgEl.style.display = "block";
+    donorTextEl.textContent = "";
+  }
+}
     window.newDonation = newDonation;
   </script>
 
