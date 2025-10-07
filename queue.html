@@ -278,6 +278,14 @@
     $("copyOverlay").onclick=async()=>{ try{await navigator.clipboard.writeText($("overlayUrl").textContent); $("copyOverlay").textContent="Copied!"; setTimeout(()=>$("copyOverlay").textContent="Copy",900);}catch{} };
     $("toggleSetup").onclick=()=>{ const hide=!setupBody.classList.contains("hidden"); setupBody.classList.toggle("hidden",hide); $("toggleSetup").textContent=hide?"Expand":"Collapse"; };
     $("clearPickerSetup").onclick=()=>{ localStorage.removeItem(PKR_KEY); slUserInput.value=""; slAmountInput.value=""; setViewerLink(); pickerSavedMsg.textContent=""; showToast("🧹 Picker setup cleared"); };
+function escapeHTML(str) {
+  return (str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
     // ---- Populate hero SELECT from herolist.json (fallback to built-in list) ----
     (async()=>{ 
