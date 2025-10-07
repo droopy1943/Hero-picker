@@ -11,7 +11,7 @@
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-  .container{max-width:980px;margin:28px auto;padding:0 16px}
+  .container{max-width:980px;margin:28px auto;padding:0 16px; position:relative;}
   h1{margin:0 0 16px;font-size:28px;letter-spacing:.3px}
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 4px 24px rgba(0,0,0,.25)}
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
@@ -41,6 +41,9 @@
   .toast{position:fixed;right:16px;bottom:16px;background:#1a1f2b;color:#e6f3ff;border:1px solid #2b3448;padding:10px 14px;border-radius:10px;box-shadow:0 6px 26px rgba(0,0,0,.35);opacity:0;transform:translateY(8px);transition:all .25s ease}
   .toast.show{opacity:1;transform:translateY(0)}
 
+  /* header license badge (top-right, next to title) */
+  .header-badge{position:absolute; right:16px; top:0; transform:translateY(-6px);}
+
   /* footer watermark */
   .watermark{
     position:fixed; right:16px; bottom:16px; text-align:right; font-size:12px; color:#cbd5e1;
@@ -56,6 +59,9 @@
 <body>
   <div class="container">
     <h1>Droopy Hero Overlay — Queue Admin</h1>
+    <div class="header-badge">
+      <div id="licenseBadge" class="pill">Unlicensed</div>
+    </div>
 
     <!-- 0) LICENSE ACTIVATION -->
     <div class="card" id="licenseCard">
@@ -86,8 +92,8 @@
       </p>
     </div>
 
-    <!-- 1) HERO PICKER SETUP -->
-    <div class="card" id="pickerSetupCard">
+    <!-- 1) HERO PICKER SETUP (Required) -->
+    <div class="card disabled" id="pickerSetupCard">
       <div class="pill">Hero Picker Setup</div>
       <p class="muted" style="margin:10px 0 14px; line-height:1.5;">
         Enter your <b>Streamlabs Donation Page username</b> and a <b>default tip amount</b>.
@@ -124,7 +130,7 @@
     </div>
 
     <!-- 2) SETUP -->
-    <div class="card" id="mainSetupCard">
+    <div class="card disabled" id="mainSetupCard">
       <div class="flex-between">
         <div class="pill">Setup</div>
         <button class="btn secondary" id="toggleSetup">Collapse</button>
@@ -170,7 +176,7 @@
     </div>
 
     <!-- 3) QUEUE -->
-    <div class="card" id="queueCard">
+    <div class="card disabled" id="queueCard">
       <div class="flex-between">
         <div class="pill">Queue</div>
         <div class="row">
@@ -184,7 +190,7 @@
           <label>Hero name</label>
           <input id="manualHero" type="text" list="heroes" placeholder="Type or pick a hero..." />
           <datalist id="heroes">
-            <!-- will be populated from herolist.json -->
+            <!-- populated from herolist.json -->
           </datalist>
         </div>
         <div>
@@ -200,13 +206,10 @@
     </div>
 
     <!-- 4) STATUS -->
-    <div class="card" id="statusCard">
+    <div class="card disabled" id="statusCard">
       <div class="flex-between">
         <div class="pill">Status</div>
-        <div class="row" style="gap:6px;">
-          <div id="licenseBadge" class="pill">Unlicensed</div>
-          <div id="liveStatus" class="pill">Not connected</div>
-        </div>
+        <div id="liveStatus" class="pill">Not connected</div>
       </div>
       <p id="log" class="muted" style="margin:10px 0 0;"></p>
 
@@ -221,12 +224,12 @@
     </div>
   </div>
 
-  <!-- footer watermark -->
+  <!-- footer watermark (always visible) -->
   <div class="watermark">
     <a href="https://twitch.tv/droopy" target="_blank" rel="noopener">
       <span>Created by: <strong>Droopy</strong></span><span class="twitch-dot" title="Twitch"></span>
     </a>
-    <div>v1.3</div>
+    <div>v1.4</div>
   </div>
 
   <!-- toast -->
@@ -260,27 +263,27 @@
     // dom helpers
     const $ = id => document.getElementById(id);
     const toast = $("toast");
-    const heroesDL = $("heroes");
     function showToast(msg){ toast.textContent=msg; toast.classList.add("show"); setTimeout(()=>toast.classList.remove("show"),1500); }
 
     // elements
     const licenseCard = $("licenseCard");
+    const licenseBadge = $("licenseBadge");
     const licenseKeyInput = $("licenseKey");
     const licenseChannelInput = $("licenseChannel");
     const verifyLicenseBtn = $("verifyLicense");
     const resetLicenseBtn = $("resetLicense");
     const licenseStatus = $("licenseStatus");
-    const licenseBadge = $("licenseBadge");
     const LICENSE_KEY = "mr_license";
 
     const slUserInput=$("slUser"), slAmountInput=$("slAmount"), savePickerBtn=$("savePickerSetup"), clearPicker=$("clearPickerSetup"), pickerSavedMsg=$("pickerSavedMsg"), viewerLinkEl=$("viewerLink"), copyViewerBtn=$("copyViewer");
     const toggleSetupBtn=$("toggleSetup"), setupBody=$("setupBody"), channelIdInput=$("channelId"), slTokenInput=$("slToken"), saveSetupBtn=$("saveSetup"), testWriteBtn=$("testWrite"), connectSLBtn=$("connectSL"), setupStatus=$("setupStatus"), overlayUrlEl=$("overlayUrl"), copyOverlayBtn=$("copyOverlay"), openOverlayA=$("openOverlay");
     const manualHero=$("manualHero"), manualDonor=$("manualDonor"), addManualBtn=$("addManual"), nextBtn=$("nextHero"), clearBtn=$("clearQueue"), queueList=$("queueList"), liveStatus=$("liveStatus"), logEl=$("log");
+    const heroesDL = $("heroes");
 
     // persist keys
     const CFG_KEY="mr_cfg", PKR_KEY="mr_picker";
 
-    // load saved
+    // load saved to inputs (doesn't unlock UI by itself)
     const cfg  = JSON.parse(localStorage.getItem(CFG_KEY) || "{}");
     const pkr  = JSON.parse(localStorage.getItem(PKR_KEY) || "{}");
     if (cfg.channelId) channelIdInput.value = cfg.channelId;
@@ -289,7 +292,7 @@
     if (pkr.amount)    slAmountInput.value  = pkr.amount;
 
     // computed paths
-    const cid = () => (channelIdInput.value||"").trim() || "demo";
+    const cid = () => (channelIdInput.value||"").trim() || (JSON.parse(localStorage.getItem(LICENSE_KEY)||"null")?.channel || "demo");
     const qRef = () => ref(db, `/channels/${cid()}/queue`);
     const curRef = () => ref(db, `/channels/${cid()}/current`);
     const settingsRef = () => ref(db, `/channels/${cid()}/settings`);
@@ -299,106 +302,92 @@
       overlayUrlEl.textContent = url;
       openOverlayA.href = url;
     }
-    setOverlayUrl();
-
     function setViewerLink(){
       const ch = cid();
       const slUser = (slUserInput.value||"").trim();
       const amt = (slAmountInput.value||"").trim();
-      if (slUser && amt && ch){
-        viewerLinkEl.textContent = `https://droopy1943.github.io/Hero-picker/heroes.html?channel=${encodeURIComponent(ch)}`;
-      } else {
-        viewerLinkEl.textContent = "— not generated yet —";
-      }
+      viewerLinkEl.textContent = (slUser && amt && ch)
+        ? `https://droopy1943.github.io/Hero-picker/heroes.html?channel=${encodeURIComponent(ch)}`
+        : "— not generated yet —";
     }
-    setViewerLink();
 
-    // --------- License logic (Firebase-bound to Channel ID) ---------
+    // ------------ License gate ------------
     let licenseVerified = false;
+
+    function lockAll(locked){
+      const cards = [$("pickerSetupCard"), $("mainSetupCard"), $("queueCard"), $("statusCard")];
+      cards.forEach(c => c.classList.toggle("disabled", !!locked));
+    }
 
     async function verifyLicense(manual=false){
       const key=(licenseKeyInput.value||"").trim();
-      const channel=(licenseChannelInput.value||$("channelId").value||"").trim();
-      if(!key||!channel){ if(manual) showToast("⚠️ Enter both license key and Channel ID."); lockAll(true); return false; }
-
+      const channel=(licenseChannelInput.value||"").trim();
+      if(!key||!channel){
+        if(manual) showToast("⚠️ Enter both license key and Channel ID.");
+        licenseVerified=false; licenseBadge.textContent="Unlicensed"; licenseBadge.removeAttribute("style");
+        lockAll(true);
+        return false;
+      }
       try{
         const licenseRef=ref(db, `/channels/${channel}/licenses/${key}`);
         const snap=await get(licenseRef);
         const data=snap.val();
         if(data && (data.active===true || data.valid===true)){
           localStorage.setItem(LICENSE_KEY, JSON.stringify({ key, channel }));
-          licenseVerified = true;
-          licenseBadge.textContent = "Licensed";
-          licenseBadge.style.borderColor = "#214f2e"; licenseBadge.style.background="#163522"; licenseBadge.style.color="#b8f5c7";
-          licenseStatus.textContent = "✔ License Verified";
-          licenseStatus.style.color = "#2ecc71";
+          licenseVerified=true;
+          licenseBadge.textContent="Licensed";
+          licenseBadge.style.borderColor="#214f2e"; licenseBadge.style.background="#163522"; licenseBadge.style.color="#b8f5c7";
+          licenseStatus.textContent="✔ License Verified"; licenseStatus.style.color="#2ecc71";
           resetLicenseBtn.classList.remove("hidden");
           licenseCard.classList.add("hidden");
+          lockAll(false);
+          setOverlayUrl(); setViewerLink();
           showToast("✅ License verified");
-          await checkPickerSetupState();
           return true;
-        } else {
-          if(manual) showToast("🚫 Invalid or inactive license key.");
-          licenseVerified = false;
-          licenseBadge.textContent = "Unlicensed";
-          licenseBadge.removeAttribute("style");
+        }else{
+          if(manual) showToast("🚫 Invalid or inactive license.");
+          licenseVerified=false; licenseBadge.textContent="Unlicensed"; licenseBadge.removeAttribute("style");
           lockAll(true);
           return false;
         }
       }catch(e){
         console.error(e);
         if(manual) showToast("🚫 License check failed (network).");
-        licenseVerified = false;
-        licenseBadge.textContent = "Unlicensed";
-        licenseBadge.removeAttribute("style");
+        licenseVerified=false; licenseBadge.textContent="Unlicensed"; licenseBadge.removeAttribute("style");
         lockAll(true);
         return false;
       }
     }
 
     verifyLicenseBtn.onclick = async ()=>{ await verifyLicense(true); };
-
     resetLicenseBtn.onclick = ()=>{
       localStorage.removeItem(LICENSE_KEY);
-      licenseVerified = false;
-      licenseBadge.textContent = "Unlicensed";
-      licenseBadge.removeAttribute("style");
-      licenseStatus.textContent = "";
-      licenseKeyInput.value = ""; licenseChannelInput.value = "";
+      licenseVerified=false; licenseBadge.textContent="Unlicensed"; licenseBadge.removeAttribute("style");
+      licenseStatus.textContent="";
+      licenseKeyInput.value=""; licenseChannelInput.value="";
       licenseCard.classList.remove("hidden");
       lockAll(true);
       showToast("🔁 License reset");
     };
 
-    // Auto-verify on load
+    // Silent re-verify on load (if saved)
     (async()=>{
+      lockAll(true); // start locked
       const saved = JSON.parse(localStorage.getItem(LICENSE_KEY) || "null");
       if(saved?.key && saved?.channel){
         licenseKeyInput.value = saved.key;
         licenseChannelInput.value = saved.channel;
         await verifyLicense(false);
-      } else {
-        lockAll(true);
       }
+      // still update URLs (won't be usable if locked)
+      setOverlayUrl(); setViewerLink();
     })();
 
-    // --------- Locking & autosave ---------
-    function lockAll(locked){
-      const cards = [$("mainSetupCard"), $("queueCard"), $("statusCard"), $("pickerSetupCard")];
-      cards.forEach(c => c.classList.toggle("disabled", !!locked));
-    }
-
-    async function checkPickerSetupState(){
-      const ok = !!(licenseVerified && (slUserInput.value && slAmountInput.value && cid()));
-      lockAll(!ok);
-      return ok;
-    }
-
-    // Debounced autosave helper
+    // ------------ Autosave (picker/setup) ------------
     function debounce(fn, ms=600){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
 
-    // Auto-save picker + cfg on input
     const autoSavePicker = debounce(()=>{
+      if(!licenseVerified) return;
       const slUser=(slUserInput.value||"").trim();
       const amount=(slAmountInput.value||"").trim();
       if(!slUser || !amount) return;
@@ -409,7 +398,8 @@
     });
 
     const autoSaveCfg = debounce(()=>{
-      const payload = { channelId: cid(), slToken: (slTokenInput.value||"").trim() };
+      if(!licenseVerified) return;
+      const payload = { channelId: (channelIdInput.value||"").trim(), slToken: (slTokenInput.value||"").trim() };
       localStorage.setItem(CFG_KEY, JSON.stringify(payload));
       setOverlayUrl(); setViewerLink();
       setupStatus.textContent = "Saved ✔";
@@ -423,20 +413,40 @@
     channelIdInput.addEventListener("input", autoSaveCfg);
     slTokenInput.addEventListener("input", autoSaveCfg);
 
-    // Keep manual buttons too (for folks who prefer clicking)
+    // keep manual buttons
     savePickerBtn.onclick = autoSavePicker;
     saveSetupBtn.onclick = autoSaveCfg;
 
-    // --------- Populate datalist from herolist.json ---------
+    // copy buttons
+    $("copyViewer").onclick = async ()=>{ try{await navigator.clipboard.writeText($("viewerLink").textContent); $("copyViewer").textContent="Copied!"; setTimeout(()=>$("copyViewer").textContent="Copy",900);}catch{} };
+    $("copyOverlay").onclick = async ()=>{ try{await navigator.clipboard.writeText($("overlayUrl").textContent); $("copyOverlay").textContent="Copied!"; setTimeout(()=>$("copyOverlay").textContent="Copy",900);}catch{} };
+
+    // collapse
+    $("toggleSetup").onclick = ()=>{
+      const hide = !$("setupBody").classList.contains("hidden");
+      $("setupBody").classList.toggle("hidden", hide);
+      $("toggleSetup").textContent = hide ? "Expand" : "Collapse";
+    };
+
+    // clear picker local only (keeps gate)
+    clearPicker.onclick = ()=>{
+      localStorage.removeItem(PKR_KEY);
+      slUserInput.value=""; slAmountInput.value="";
+      setViewerLink();
+      $("pickerSavedMsg").textContent="";
+      showToast("🧹 Picker setup cleared");
+      // keep locked state governed by licenseVerified
+    };
+
+    // ------------ herolist.json -> datalist ------------
     (async()=>{
       try{
         const res = await fetch("./herolist.json", { cache: "no-store" });
-        const list = await res.json(); // expect array of hero names
+        const list = await res.json();
         const names = Array.isArray(list) ? list : (Array.isArray(list?.heroes) ? list.heroes : []);
         if(names.length){
           heroesDL.innerHTML = names.map(h=>`<option>${escapeHTML(h)}</option>`).join("");
         } else {
-          // fallback to your previous hardcoded list if JSON empty
           const fallback = ["Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America","Cloak & Dagger","Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk","Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark","Loki","Luna Snow","Magik","Magneto","Mantis","Mister Fantastic","Moon Knight","Namor","Peni Parker","Phoenix","Psylocke","The Punisher","The Thing","Rocket Raccoon","Scarlet Witch","Squirrel Girl","Spider-Man","Star-Lord","Storm","Thor","Ultron","Venom","Winter Soldier","Wolverine"];
           heroesDL.innerHTML = fallback.map(h=>`<option>${escapeHTML(h)}</option>`).join("");
         }
@@ -445,7 +455,7 @@
       }
     })();
 
-    // --------- Queue live subscription ---------
+    // ------------ live queue subscription ------------
     let unsub = null;
     function resubscribeQueue(){
       if (unsub) unsub();
@@ -471,7 +481,7 @@
       });
     }
 
-    // Add / Next / Clear
+    // ------------ queue controls ------------
     addManualBtn.onclick = async ()=>{
       if(!licenseVerified){ return alert("Enter a valid license first."); }
       const hero = (manualHero.value||"").trim();
@@ -526,7 +536,7 @@
         for (const m of arr){
           const name = m.name || "Anonymous";
           const amount = Number(m.amount||0);
-          const note = (m.message||"")+""; // expected: I want to request [Hero]
+          const note = (m.message||"")+"";
           const match = note.match(/I\s*want\s*to\s*request\s*\[([^\]]+)\]/i);
           if (!match) continue;
           const hero = match[1].trim();
@@ -537,7 +547,7 @@
       alert("Connected to Streamlabs. Leave this page open during your stream.");
     };
 
-    // Debug tools
+    // Debug tools (Shift+Click Status pill)
     $("statusCard").querySelector(".pill").addEventListener("click", (e)=>{
       if (e.shiftKey){ $("debugPanel").classList.toggle("hidden"); updateDbg(); }
     });
@@ -551,13 +561,10 @@
     };
     function updateDbg(){ $("dbgInfo").textContent = `Path: /channels/${cid()}/*  | Licensed: ${licenseVerified}`; }
 
-    // Utils
+    // utils
     function sanitize(s){return (s||"").replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}
     function escapeHTML(s){return sanitize(s);}
     function log(msg){ logEl.textContent = `[${new Date().toLocaleTimeString()}] ${msg}\n` + (logEl.textContent||""); }
-
-    // init lock state
-    await checkPickerSetupState();
   </script>
 </body>
 </html>
