@@ -176,13 +176,16 @@ const aliases = {
 
   // Create a bunch of safe fallback variations to test
   const variants = [
-    `images/${fileName}`,
-    `images/${fileName.charAt(0).toUpperCase() + fileName.slice(1)}`,
-    `images/${fileName.toLowerCase()}`,
-    `images/${fileName.replace(/_/g, ' ')}`, // handle underscores vs spaces
-    `images/${fileName.replace(/ /g, '')}`,  // handle accidental spaces
-    `images/${fileName.replace(/\.png$/i, '.PNG')}` // handle uppercase extensions
-  ];
+  `images/${fileName}`,
+  `images/${fileName.charAt(0).toUpperCase() + fileName.slice(1)}`,
+  `images/${fileName.toLowerCase()}`,
+  `images/${fileName.replace(/_/g, ' ')}`,   // if original uses underscores
+  `images/${fileName.replace(/ /g, '_')}`,   // if original uses spaces
+  `images/${fileName.replace(/ /g, '')}`,    // remove spaces entirely
+  `images/${fileName.replace(/_/g, '')}`,    // remove underscores entirely
+  `images/${fileName.replace(/\.png$/i, '.PNG')}` // uppercase .PNG extension
+];
+
 
   const tryNext = (index = 0) => {
     if (index >= variants.length) {
