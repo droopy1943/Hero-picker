@@ -1,117 +1,263 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Marvel Rivals Hero Request</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      margin: 0;
-      padding: 20px;
-      text-align: center;
-    }
-    h1 {
-      color: #ffcc00;
-      margin-bottom: 20px;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 15px;
-      margin: 0 auto;
-      max-width: 1000px; /* allow wider grid */
-    }
-    .hero-card {
-      background: #222;
-      border: 2px solid #444;
-      border-radius: 8px;
-      padding: 10px;
-      cursor: pointer;
-      transition: transform 0.2s, border-color 0.2s;
-      text-align: center;
-    }
-    .hero-card:hover {
-      transform: scale(1.05);
-      border-color: #ffcc00;
-    }
-    .hero-card img {
-      width: 100px;
-      height: 100px;
-      object-fit: contain;
-      margin-bottom: 8px;
-    }
-    .hero-name {
-      font-size: 0.9rem;
-      color: #fff;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marvel Rivals Hero Picker</title>
+<style>
+  body {
+    margin: 0;
+    font-family: "Comic Sans MS", sans-serif;
+    background: #0d0d0d;
+    color: #fff;
+    text-align: center;
+  }
+
+  h1 {
+    margin-top: 20px;
+    font-size: 2em;
+    color: #f0f0f0;
+  }
+
+  .setup-card {
+    background: #1c1c1c;
+    border: 2px solid #333;
+    border-radius: 10px;
+    margin: 20px auto;
+    padding: 20px;
+    width: 90%;
+    max-width: 500px;
+    text-align: left;
+    box-shadow: 0 0 10px #000;
+  }
+
+  .setup-card h2 {
+    margin-top: 0;
+    cursor: pointer;
+  }
+
+  .setup-fields {
+    display: none;
+    margin-top: 10px;
+  }
+
+  .setup-card.open .setup-fields {
+    display: block;
+  }
+
+  .setup-fields label {
+    display: block;
+    margin-top: 10px;
+  }
+
+  .setup-fields input {
+    width: 100%;
+    padding: 6px;
+    border-radius: 6px;
+    border: none;
+    margin-top: 4px;
+  }
+
+  button {
+    background-color: #d32f2f;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    margin-top: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  button:hover {
+    background-color: #b71c1c;
+  }
+
+  .toast {
+    visibility: hidden;
+    min-width: 200px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 10px;
+    position: fixed;
+    z-index: 1;
+    right: 20px;
+    bottom: 30px;
+    font-size: 16px;
+    opacity: 0;
+    transition: opacity 0.5s, visibility 0.5s;
+  }
+
+  .toast.show {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 15px;
+    padding: 20px;
+    margin: 0 auto;
+    width: 90%;
+    max-width: 900px;
+  }
+
+  .hero {
+    position: relative;
+    border: 2px solid #444;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.2s, opacity 0.3s;
+  }
+
+  .hero img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .hero:hover {
+    transform: scale(1.05);
+  }
+
+  .hero.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .tooltip {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    font-size: 12px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .hero.disabled:hover .tooltip {
+    opacity: 1;
+  }
+</style>
 </head>
+
 <body>
-  <h1>Pick Your Hero!</h1>
-  <div class="grid" id="heroGrid"></div>
+  <h1>Marvel Rivals Hero Picker</h1>
+
+  <div class="setup-card" id="setupCard">
+    <h2 onclick="toggleSetup()">⚙️ Streamer Setup</h2>
+    <div class="setup-fields">
+      <label>Streamlabs Username:
+        <input type="text" id="usernameInput" placeholder="e.g. droopy2">
+      </label>
+      <label>Default Donation Amount ($):
+        <input type="number" id="amountInput" placeholder="e.g. 5" min="1">
+      </label>
+      <label>Channel ID:
+        <input type="text" id="channelInput" placeholder="e.g. Droopy">
+      </label>
+      <button onclick="saveSetup()">Save Setup</button>
+      <button onclick="clearSetup()" style="background-color:#555;">Clear Setup</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">✅ Setup saved!</div>
+
+  <div class="hero-grid" id="heroGrid"></div>
 
   <script>
     const heroes = [
-      { name: "Adam Warlock", img: "images/Adam Warlock.png" },
-      { name: "Angela", img: "images/Angela.png" },
-      { name: "Black Panther", img: "images/Black Panther.png" },
-      { name: "Black Widow", img: "images/Black Widow.png" },
-      { name: "Blade", img: "images/Blade.png" },
-      { name: "Captain America", img: "images/Captain America.png" },
-      { name: "Cloak & Dagger", img: "images/Cloak & Dagger.png" },
-      { name: "Doctor Strange", img: "images/Doctor Strange.png" },
-      { name: "Emma Frost", img: "images/Emma Frost.png" },
-      { name: "Groot", img: "images/Groot.png" },
-      { name: "Hawkeye", img: "images/Hawkeye.png" },
-      { name: "Hela", img: "images/Hela.png" },
-      { name: "Hulk", img: "images/Hulk.png" },
-      { name: "Human Torch", img: "images/Human Torch.png" },
-      { name: "Invisible Woman", img: "images/Invisible Woman.png" },
-      { name: "Iron Fist", img: "images/Iron Fist.png" },
-      { name: "Iron Man", img: "images/Iron Man.png" },
-      { name: "Jeff the Land Shark", img: "images/Jeff the Land Shark.png" },
-      { name: "Loki", img: "images/Loki.png" },
-      { name: "Luna Snow", img: "images/Luna Snow.png" },
-      { name: "Magik", img: "images/Magik.png" },
-      { name: "Magneto", img: "images/Magneto.png" },
-      { name: "Mantis", img: "images/Mantis.png" },
-      { name: "Mister Fantastic", img: "images/Mister Fantastic.png" },
-      { name: "Moon Knight", img: "images/Moon Knight.png" },
-      { name: "Namor", img: "images/Namor.png" },
-      { name: "Peni Parker", img: "images/Peni Parker.png" },
-      { name: "Phoenix", img: "images/Phoenix.png" },
-      { name: "Psylocke", img: "images/Psylocke.png" },
-      { name: "The Punisher", img: "images/The Punisher.png" },
-      { name: "The Thing", img: "images/The Thing.png" },
-      { name: "Rocket Raccoon", img: "images/Rocket Raccoon.png" },
-      { name: "Scarlet Witch", img: "images/Scarlet Witch.png" },
-      { name: "Squirrel Girl", img: "images/Squirrel Girl.png" },
-      { name: "Spider-Man", img: "images/Spider-Man.png" },
-      { name: "Star-Lord", img: "images/Star-Lord.png" },
-      { name: "Storm", img: "images/Storm.png" },
-      { name: "Thor", img: "images/Thor.png" },
-      { name: "Ultron", img: "images/Ultron.png" },
-      { name: "Venom", img: "images/Venom.png" },
-      { name: "Winter Soldier", img: "images/Winter Soldier.png" },
-      { name: "Wolverine", img: "images/Wolverine.png" }
+      "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America",
+      "Cloak & Dagger","Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk",
+      "Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark","Loki",
+      "Luna Snow","Magik","Magneto","Mantis","Mister Fantastic","Moon Knight","Namor",
+      "Peni Parker","Phoenix","Psylocke","The Punisher","The Thing","Rocket Raccoon",
+      "Scarlet Witch","Squirrel Girl","Spider-Man","Star-Lord","Storm","Thor","Ultron",
+      "Venom","Winter Soldier","Wolverine"
     ];
 
-    const grid = document.getElementById("heroGrid");
-    heroes.forEach(hero => {
-      const card = document.createElement("div");
-      card.className = "hero-card";
-      card.innerHTML = `
-        <img src="${hero.img}" alt="${hero.name}">
-        <div class="hero-name">${hero.name}</div>
-      `;
-      card.onclick = () => {
-        const message = encodeURIComponent(`I want to request ${hero.name}`);
-        const tipUrl = `https://streamlabs.com/droopy2/tip?amount=5&message=${message}`;
-        window.open(tipUrl, "_blank");
-      };
-      grid.appendChild(card);
+    const heroGrid = document.getElementById("heroGrid");
+    const toast = document.getElementById("toast");
+    const setupCard = document.getElementById("setupCard");
+
+    function toggleSetup() {
+      setupCard.classList.toggle("open");
+    }
+
+    function showToast(msg = "✅ Setup saved!") {
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 3000);
+    }
+
+    function saveSetup() {
+      const username = document.getElementById("usernameInput").value.trim();
+      const amount = document.getElementById("amountInput").value.trim();
+      const channel = document.getElementById("channelInput").value.trim();
+
+      if (!username || !amount || !channel) {
+        showToast("⚠️ Please complete all fields!");
+        return;
+      }
+
+      localStorage.setItem("streamlabsUser", username);
+      localStorage.setItem("defaultAmount", amount);
+      localStorage.setItem("channelId", channel);
+
+      showToast("✅ Setup saved!");
+      renderHeroes();
+    }
+
+    function clearSetup() {
+      localStorage.clear();
+      showToast("🧹 Setup cleared!");
+      renderHeroes();
+    }
+
+    function renderHeroes() {
+      heroGrid.innerHTML = "";
+
+      const username = localStorage.getItem("streamlabsUser");
+      const amount = localStorage.getItem("defaultAmount");
+      const setupComplete = username && amount;
+
+      heroes.forEach(hero => {
+        const div = document.createElement("div");
+        div.classList.add("hero");
+        if (!setupComplete) div.classList.add("disabled");
+
+        const img = document.createElement("img");
+        img.src = `images/${hero}.png`;
+        img.alt = hero;
+
+        if (setupComplete) {
+          const tipUrl = `https://streamlabs.com/${username}/tip?amount=${amount}&message=I%20want%20to%20request%20${encodeURIComponent(hero)}`;
+          div.onclick = () => window.open(tipUrl, "_blank");
+        } else {
+          const tip = document.createElement("div");
+          tip.classList.add("tooltip");
+          tip.textContent = "Please complete setup first";
+          div.appendChild(tip);
+        }
+
+        div.appendChild(img);
+        heroGrid.appendChild(div);
+      });
+    }
+
+    // Initialize with saved data
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("usernameInput").value = localStorage.getItem("streamlabsUser") || "";
+      document.getElementById("amountInput").value = localStorage.getItem("defaultAmount") || "";
+      document.getElementById("channelInput").value = localStorage.getItem("channelId") || "";
+      renderHeroes();
     });
   </script>
 </body>
