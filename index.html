@@ -1,123 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Marvel Rivals Hero Picker</title>
-  <style>
-    body {
-      background: #0a0a0a;
-      color: white;
-      font-family: 'Poppins', sans-serif;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
+<meta charset="UTF-8">
+<title>Pick Your Hero</title>
+<style>
+  body {
+    background: #0b0b0d;
+    color: white;
+    font-family: 'Comic Sans MS', sans-serif;
+    text-align: center;
+    padding: 20px;
+  }
 
-    h1 {
-      text-align: center;
-      color: #ff4655;
-      margin: 30px 0 10px;
-      font-size: 2em;
-      letter-spacing: 1px;
-    }
+  h1 {
+    color: #ff3b3b;
+    text-shadow: 2px 2px 5px #000;
+  }
 
-    .hero-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 20px;
-      width: 90%;
-      max-width: 900px;
-      margin-bottom: 80px;
-    }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px;
+    margin-top: 20px;
+  }
 
-    .hero-tile {
-      background-color: #151515;
-      border: 2px solid #ff4655;
-      border-radius: 10px;
-      overflow: hidden;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s ease-in-out;
-    }
+  .hero-card {
+    background: rgba(255,255,255,0.05);
+    border: 2px solid #ff3b3b;
+    border-radius: 10px;
+    padding: 10px;
+    transition: transform 0.15s ease, border-color 0.2s;
+  }
 
-    .hero-tile:hover {
-      transform: scale(1.05);
-      background-color: #222;
-      border-color: #e63946;
-    }
+  .hero-card:hover {
+    transform: scale(1.05);
+    border-color: #ffd33b;
+    cursor: pointer;
+  }
 
-    .hero-tile img {
-      width: 100%;
-      height: 100px;
-      object-fit: cover;
-      border-bottom: 1px solid #ff4655;
-    }
+  .hero-card img {
+    width: 100%;
+    border-radius: 6px;
+    object-fit: cover;
+  }
 
-    .hero-name {
-      margin: 8px 0;
-      font-size: 0.9em;
-      font-weight: 600;
-      color: #fff;
-      text-transform: capitalize;
-    }
+  .hero-name {
+    font-weight: bold;
+    margin-top: 6px;
+    color: #fff;
+    text-shadow: 1px 1px 3px #000;
+  }
 
-    /* --- DROOPY WATERMARK --- */
-    .droopy-watermark {
-      position: fixed;
-      bottom: 12px;
-      right: 15px;
-      opacity: 0.7;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.85em;
-      color: #a3a3a3;
-      user-select: none;
-      z-index: 1000;
-    }
+  footer {
+    margin-top: 30px;
+    color: #aaa;
+    font-size: 14px;
+  }
 
-    .droopy-watermark:hover {
-      opacity: 1;
-      color: #fff;
-    }
+  footer a {
+    color: #9146FF;
+    text-decoration: none;
+  }
 
-    .droopy-watermark svg {
-      width: 22px;
-      height: 22px;
-      fill: #9146FF;
-      transition: fill 0.2s;
-    }
+  footer a:hover {
+    text-decoration: underline;
+  }
 
-    .droopy-watermark:hover svg {
-      fill: #b983ff;
-    }
-
-    .droopy-watermark span {
-      font-family: 'Poppins', sans-serif;
-      font-weight: 500;
-      color: #ccc;
-    }
-  </style>
+  .twitch-icon {
+    width: 16px;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+</style>
 </head>
-
 <body>
   <h1>Pick Your Hero</h1>
 
-  <div class="hero-grid" id="heroGrid"></div>
+  <div id="heroGrid" class="hero-grid"></div>
 
-  <!-- DROOPY WATERMARK -->
-  <a href="https://twitch.tv/droopy" target="_blank" class="droopy-watermark" title="Created by Droopy">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2400 2800">
-      <path d="M500 0L0 500v1800h600v500l500-500h500l800-800V0H500zm1700 1300l-400 400h-500l-350 350v-350H500V200h1700v1100z"/>
-      <path d="M1700 650h200v550h-200zm-550 0h200v550h-200z"/>
-    </svg>
-    <span>Created by Droopy</span>
-  </a>
+  <footer>
+    <a href="https://twitch.tv/droopy" target="_blank">
+      <img class="twitch-icon" src="https://cdn-icons-png.flaticon.com/512/5968/5968819.png" alt="Twitch">
+      Created by Droopy
+    </a>
+  </footer>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
+      authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
+      databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+      projectId: "marvel-rivals-overlay-7f867",
+      storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
+      messagingSenderId: "1078364810175",
+      appId: "1:1078364810175:web:fac410007b70b65e348f0a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
     const heroes = [
       "Adam Warlock", "Angela", "Black Panther", "Black Widow", "Blade", "Captain America",
       "Cloak & Dagger", "Doctor Strange", "Emma Frost", "Groot", "Hawkeye", "Hela", "Hulk",
@@ -129,36 +113,43 @@
     ];
 
     const heroGrid = document.getElementById("heroGrid");
+    const params = new URLSearchParams(location.search);
+    const channelId = params.get("channel") || "demo";
 
-    heroes.forEach(hero => {
-      const tile = document.createElement("div");
-      tile.className = "hero-tile";
+    let streamlabsUser = "droopy";  // fallback
+    let defaultAmount = 5;          // fallback
 
-      const img = document.createElement("img");
-      const heroFile = `images/${hero}.png`;
+    // Fetch Streamlabs info from Firebase
+    async function loadSettings() {
+      const settingsRef = ref(db, `/channels/${channelId}/settings`);
+      const snap = await get(settingsRef);
+      if (snap.exists()) {
+        const data = snap.val();
+        if (data.streamlabsUser) streamlabsUser = data.streamlabsUser;
+        if (data.defaultAmount) defaultAmount = data.defaultAmount;
+      }
+      buildGrid();
+    }
 
-      img.src = heroFile;
-      img.alt = hero;
+    function buildGrid() {
+      heroGrid.innerHTML = "";
+      heroes.forEach(hero => {
+        const heroCard = document.createElement("div");
+        heroCard.className = "hero-card";
+        heroCard.innerHTML = `
+          <img src="images/${hero.replace(/[^a-z0-9]/gi, '').toLowerCase()}.png" alt="${hero}">
+          <div class="hero-name">${hero}</div>
+        `;
+        heroCard.onclick = () => {
+          const msg = encodeURIComponent(`I want to request ${hero}`);
+          const url = `https://streamlabs.com/${streamlabsUser}/tip?amount=${defaultAmount}&message=${msg}`;
+          window.open(url, "_blank");
+        };
+        heroGrid.appendChild(heroCard);
+      });
+    }
 
-      img.onerror = () => {
-        const altFile = `images/${hero.replace(/ /g, '').toLowerCase()}.png`;
-        img.src = altFile;
-      };
-
-      const label = document.createElement("div");
-      label.className = "hero-name";
-      label.textContent = hero;
-
-      tile.appendChild(img);
-      tile.appendChild(label);
-
-      tile.onclick = () => {
-        const link = `https://streamlabs.com/CHANNEL_NAME/tip?amount=5&message=I%20want%20to%20request%20${encodeURIComponent(hero)}`;
-        window.open(link, "_blank");
-      };
-
-      heroGrid.appendChild(tile);
-    });
+    loadSettings();
   </script>
 </body>
 </html>
