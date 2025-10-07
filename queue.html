@@ -6,115 +6,226 @@
 <title>Droopy Hero Overlay — Queue Admin</title>
 <style>
   body {
-    background-color: #121212;
-    color: #eee;
-    font-family: 'Segoe UI', sans-serif;
-    margin: 0;
-    padding: 20px;
+    background-color: #111;
+    color: #fff;
+    font-family: "Segoe UI", sans-serif;
+    margin: 20px;
   }
+
   h1 {
     text-align: center;
-    color: #e50914;
-    margin-bottom: 20px;
+    color: #e22;
   }
+
   .card {
-    background: #1e1e1e;
+    background: #1c1c1c;
     border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
   }
-  input, select {
-    background: #2a2a2a;
-    color: #fff;
-    border: 1px solid #333;
-    border-radius: 6px;
-    padding: 8px;
-    margin-top: 5px;
-    width: 100%;
+
+  .card h2 {
+    margin-top: 0;
+    font-size: 1.2em;
+    color: #ccc;
+    border-bottom: 1px solid #333;
+    padding-bottom: 6px;
   }
-  button {
-    background-color: #e50914;
-    color: white;
+
+  .btn {
     border: none;
-    padding: 10px 14px;
     border-radius: 6px;
-    margin-top: 10px;
+    padding: 8px 14px;
+    font-size: 0.9em;
     cursor: pointer;
     font-weight: bold;
-    transition: background 0.2s;
   }
-  button:hover {
-    background-color: #b0060f;
-  }
-  .output-link {
-    margin-top: 10px;
-    background: #181818;
+
+  .btn-red { background: #e22; color: #fff; }
+  .btn-green { background: #28a745; color: #fff; }
+  .btn-yellow { background: #ffb400; color: #111; }
+  .btn-blue { background: #007bff; color: #fff; }
+
+  input[type="text"], input[type="password"], input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border: none;
     border-radius: 6px;
+    background: #2a2a2a;
+    color: #fff;
+  }
+
+  .row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .status-box {
+    background: #1a1a1a;
+    border-radius: 10px;
     padding: 10px;
-    font-size: 0.9em;
-    color: #a0ffa0;
-    word-break: break-all;
+    font-family: monospace;
+    height: 120px;
+    overflow-y: auto;
+  }
+
+  .queue-item {
+    background: #111;
+    border-radius: 8px;
+    padding: 6px 8px;
+    margin-top: 6px;
+    border: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .queue-item span {
+    font-weight: bold;
+  }
+
+  .tiny-text {
+    font-size: 0.8em;
+    color: #aaa;
+  }
+
+  a {
+    color: #66aaff;
+    text-decoration: none;
   }
 </style>
 </head>
-
 <body>
   <h1>Droopy Hero Overlay — Queue Admin</h1>
 
   <div class="card">
-    <h3>🎯 Streamer Setup</h3>
-    <label>Channel ID (for overlay):</label>
-    <input type="text" id="channelId" placeholder="e.g. Droopy">
-
-    <label>Donation Page URL:</label>
-    <input type="text" id="donationBase" placeholder="e.g. https://streamlabs.com/droopy/tip">
-
-    <label>Default Donation Amount ($):</label>
-    <input type="number" id="defaultAmount" placeholder="e.g. 5">
-
-    <button id="saveSetup">💾 Save Setup</button>
-    <button id="generateLink">🔗 Generate Hero Picker Link</button>
-    <div id="generatedUrl" class="output-link"></div>
+    <h2>Setup</h2>
+    <p>Enter your <b>Channel ID</b> (usually your Streamlabs/Twitch username). Optional: paste your <b>Streamlabs Socket Token</b> to auto-queue from donations.</p>
+    <div class="row">
+      <input type="text" id="channelId" placeholder="Channel ID" />
+      <input type="text" id="socketToken" placeholder="Streamlabs Socket Token (optional)" />
+    </div>
+    <p class="tiny-text">Your data lives at <code>/channels/&lt;yourID&gt;/...</code></p>
+    <div class="row">
+      <button class="btn btn-red" id="saveSetup">Save Setup</button>
+      <button class="btn btn-blue" id="testFirebase">Test Firebase</button>
+      <button class="btn btn-blue" id="connectStreamlabs">Connect Streamlabs</button>
+    </div>
+    <p class="tiny-text">Use this URL in an OBS Browser Source:</p>
+    <div class="row">
+      <input type="text" id="overlayUrl" readonly />
+      <button class="btn btn-blue" id="copyUrl">Copy</button>
+      <button class="btn btn-blue" id="openOverlay">Open Overlay</button>
+    </div>
   </div>
 
   <div class="card">
-    <h3>🧾 Queue Controls</h3>
-    <button id="clearQueue">Clear Queue</button>
-    <button id="nextHero">Next Hero</button>
-    <ul id="queueList"></ul>
+    <h2>Queue</h2>
+    <div class="row">
+      <input type="text" id="heroName" placeholder="Type or pick a hero..." />
+      <input type="text" id="donorName" placeholder="Donor name (optional)" />
+      <button class="btn btn-red" id="addToQueue">Add to Queue</button>
+    </div>
+    <div id="queueList"></div>
+    <div class="row">
+      <button class="btn btn-green" id="nextHero">Next Hero → Overlay</button>
+      <button class="btn btn-yellow" id="clearQueue">Clear Queue</button>
+    </div>
   </div>
 
-  <script>
-    const saveBtn = document.getElementById("saveSetup");
-    const genBtn = document.getElementById("generateLink");
-    const channelEl = document.getElementById("channelId");
-    const donationEl = document.getElementById("donationBase");
-    const amountEl = document.getElementById("defaultAmount");
-    const outputEl = document.getElementById("generatedUrl");
+  <div class="card">
+    <h2>Status</h2>
+    <div class="status-box" id="statusBox"></div>
+    <p class="tiny-text" id="listeningPath">Listening @ /channels/demo/queue</p>
+  </div>
 
-    saveBtn.addEventListener("click", () => {
-      localStorage.setItem("channelId", channelEl.value.trim());
-      localStorage.setItem("donationBase", donationEl.value.trim());
-      localStorage.setItem("defaultAmount", amountEl.value.trim());
-      alert("✅ Setup saved!");
-    });
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-    genBtn.addEventListener("click", () => {
-      const channel = channelEl.value.trim();
-      const donationBase = encodeURIComponent(donationEl.value.trim());
-      const amount = amountEl.value.trim() || 5;
+    const firebaseConfig = {
+      apiKey: "AIzaSy...",
+      authDomain: "marvel-rivals-overlay.firebaseapp.com",
+      databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com/",
+      projectId: "marvel-rivals-overlay-7f867",
+      storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
+      messagingSenderId: "739389381",
+      appId: "1:739389381:web:9b6dffbcbe543ff726c47f"
+    };
 
-      if (!channel || !donationBase) {
-        alert("Please fill out Channel ID and Donation URL first!");
-        return;
-      }
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-      const url = `https://droopy1943.github.io/Hero-picker/?channel=${channel}&amount=${amount}&donolink=${donationBase}`;
-      navigator.clipboard.writeText(url).then(() => {
-        outputEl.textContent = `✅ Link copied to clipboard:\n${url}`;
-      });
-    });
+    const channelInput = document.getElementById("channelId");
+    const socketInput = document.getElementById("socketToken");
+    const saveSetupBtn = document.getElementById("saveSetup");
+    const heroInput = document.getElementById("heroName");
+    const donorInput = document.getElementById("donorName");
+    const addQueueBtn = document.getElementById("addToQueue");
+    const clearQueueBtn = document.getElementById("clearQueue");
+    const nextHeroBtn = document.getElementById("nextHero");
+    const queueList = document.getElementById("queueList");
+    const statusBox = document.getElementById("statusBox");
+    const overlayUrl = document.getElementById("overlayUrl");
+    const copyUrl = document.getElementById("copyUrl");
+    const openOverlay = document.getElementById("openOverlay");
+    const listeningPath = document.getElementById("listeningPath");
+
+    let channel = "demo";
+
+    const log = msg => {
+      const time = new Date().toLocaleTimeString();
+      statusBox.innerHTML += `[${time}] ${msg}<br>`;
+      statusBox.scrollTop = statusBox.scrollHeight;
+    };
+
+    saveSetupBtn.onclick = () => {
+      channel = channelInput.value.trim() || "demo";
+      overlayUrl.value = `https://droopy1943.github.io/Hero-picker/overlay.html?channel=${channel}`;
+      listeningPath.textContent = `Listening @ /channels/${channel}/queue`;
+      log(`Saved settings for channel: ${channel}`);
+    };
+
+    addQueueBtn.onclick = () => {
+      const hero = heroInput.value.trim();
+      if (!hero) return log("⚠️ Hero name is empty.");
+      const donor = donorInput.value.trim() || "Anonymous";
+      const qRef = ref(db, `channels/${channel}/queue`);
+      push(qRef, { hero, donor, ts: Date.now() });
+      log(`Added to queue: ${hero} by ${donor}`);
+      heroInput.value = "";
+      donorInput.value = "";
+    };
+
+    clearQueueBtn.onclick = () => {
+      remove(ref(db, `channels/${channel}/queue`));
+      remove(ref(db, `channels/${channel}/current`));
+      log("Queue cleared.");
+    };
+
+    nextHeroBtn.onclick = () => {
+      const qRef = ref(db, `channels/${channel}/queue`);
+      onValue(qRef, snapshot => {
+        const data = snapshot.val();
+        if (data) {
+          const firstKey = Object.keys(data)[0];
+          const nextHero = data[firstKey];
+          set(ref(db, `channels/${channel}/current`), nextHero);
+          remove(ref(db, `channels/${channel}/queue/${firstKey}`));
+          log(`Sent to overlay: ${nextHero.hero}`);
+        } else log("Queue is empty.");
+      }, { onlyOnce: true });
+    };
+
+    copyUrl.onclick = () => {
+      navigator.clipboard.writeText(overlayUrl.value);
+      log("Copied overlay URL to clipboard.");
+    };
+
+    openOverlay.onclick = () => window.open(overlayUrl.value, "_blank");
   </script>
 </body>
 </html>
