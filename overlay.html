@@ -172,27 +172,48 @@ const aliases = {
 
 
   if (heroKey) {
-    let fileName = characters[heroKey];
+  let fileName = characters[heroKey];
 
-    // Try capitalized filename first, then lowercase fallback
-    const upperPath = `images/${fileName.charAt(0).toUpperCase() + fileName.slice(1)}`;
-    const lowerPath = `images/${fileName.toLowerCase()}`;
+  // Create a bunch of safe fallback variations to test
+  const variants = [
+    `images/${fileName}`,
+    `images/${fileName.charAt(0).toUpperCase() + fileName.slice(1)}`,
+    `images/${fileName.toLowerCase()}`,
+    `images/${fileName.replace(/_/g, ' ')}`, // handle underscores vs spaces
+    `images/${fileName.replace(/ /g, '')}`,  // handle accidental spaces
+    `images/${fileName.replace(/\.png$/i, '.PNG')}` // handle uppercase extensions
+  ];
 
-    console.log(`Loading image for "${heroName}" → ${upperPath}`);
+  const tryNext = (index = 0) => {
+    if (index >= variants.length) {
+      console.warn(`❌ Could not load image for "${heroName}"`);
+      charImgEl.style.display = "none";
+      return;
+    }
 
-    charImgEl.onerror = () => {
-      console.warn("Uppercase not found, trying lowercase:", lowerPath);
-      charImgEl.src = lowerPath;
+    const src = variants[index];
+    console.log(`Trying: ${src}`);
+    charImgEl.src = src;
+
+    charImgEl.onload = () => {
+      charImgEl.style.display = "block";
+      donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
+      console.log(`✅ Loaded: ${src}`);
     };
 
-    charImgEl.src = upperPath;
-    charImgEl.style.display = "block";
-    donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
-  } else {
-    console.log("Hero not found:", heroName);
-    charImgEl.style.display = "none";
-    donorTextEl.textContent = "";
-  }
+    charImgEl.onerror = () => {
+      console.warn(`Failed: ${src}, trying next...`);
+      tryNext(index + 1);
+    };
+  };
+
+  tryNext();
+} else {
+  console.log("Hero not found:", heroName);
+  charImgEl.style.display = "none";
+  donorTextEl.textContent = "";
+}
+
 }
 
     window.newDonation = newDonation;
