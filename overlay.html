@@ -163,12 +163,20 @@
     const channelId = params.get("channel") || "demo";
 
     onValue(ref(db, `/channels/${channelId}/current`), (snap) => {
-      const cur = snap.val();
-      if (!cur || !cur.hero) return;
+  const cur = snap.val();
+  
+  if (!cur || !cur.hero) {
+    // Show default image when no hero is active
+    console.log("No current hero — showing default image.");
+    charImgEl.src = "images/default_hero.png"; // your fallback image
+    donorTextEl.textContent = "Pick a Hero!";
+    return;
+  }
 
-      console.log("Now showing:", cur.hero, "by", cur.donor || "Anonymous");
-      newDonation(cur.hero.trim(), cur.donor);
-    });
+  console.log("Now showing:", cur.hero, "by", cur.donor || "Anonymous");
+  newDonation(cur.hero.trim(), cur.donor);
+});
+
   </script>
 </body>
 </html>
