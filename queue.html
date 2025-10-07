@@ -13,7 +13,7 @@
   body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
   .container{max-width:980px;margin:28px auto;padding:0 16px;position:relative}
   h1{margin:0 0 16px;font-size:28px;letter-spacing:.3px;display:flex;justify-content:space-between;align-items:center}
-  .status-pill{font-size:14px;padding:6px 10px;border-radius:999px;color:#fff}
+  .status-pill{font-size:12px;padding:6px 10px;border-radius:999px;color:#fff;white-space:nowrap}
   .status-pill.good{background:var(--good)}
   .status-pill.bad{background:var(--accent)}
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 4px 24px rgba(0,0,0,.25)}
@@ -41,12 +41,24 @@
   .hidden{display:none!important}
   .disabled *{pointer-events:none;opacity:.5}
   #log{white-space:pre-wrap}
-  footer{text-align:right;font-size:13px;color:var(--muted);margin-top:30px;}
-  footer a{color:#a970ff;text-decoration:none;font-weight:600;}
-  footer a:hover{text-decoration:underline;}
+
+  /* Footer watermark */
+  .watermark{
+    position:fixed; right:16px; bottom:16px; text-align:right; font-size:12px; color:#cbd5e1;
+    line-height:1.3; z-index:50; pointer-events:auto;
+  }
+  .watermark a{
+    color:#cbd5e1; text-decoration:none; display:inline-flex; align-items:center; gap:6px;
+  }
+  .watermark a:hover{ text-shadow:0 0 6px #9146ff; }
+  .twitch-dot{ display:inline-block; width:14px; height:14px; background:#9146ff; border-radius:50%; }
+
+  /* Inline license message */
   .license-msg{margin-top:8px;font-size:13px;font-weight:500;}
   .license-msg.good{color:var(--good);}
   .license-msg.bad{color:var(--accent);}
+
+  /* Toast (kept for non-license actions) */
   .toast{position:fixed;right:16px;bottom:16px;background:#1a1f2b;color:#e6f3ff;border:1px solid #2b3448;padding:10px 14px;border-radius:10px;box-shadow:0 6px 26px rgba(0,0,0,.35);opacity:0;transform:translateY(8px);transition:all .25s ease}
   .toast.show{opacity:1;transform:translateY(0)}
 </style>
@@ -58,7 +70,7 @@
       <span id="licenseStatus" class="status-pill bad">Unlicensed</span>
     </h1>
 
-    <!-- LICENSE ACTIVATION -->
+    <!-- 0) LICENSE ACTIVATION -->
     <div class="card" id="licenseCard">
       <div class="pill">License Activation</div>
       <p class="muted" style="margin:8px 0 10px;">
@@ -76,18 +88,18 @@
       </div>
       <div class="row" style="margin-top:10px;">
         <button class="btn teal" id="verifyLicense">Verify License</button>
+        <button class="btn secondary hidden" id="resetLicense">Reset</button>
       </div>
       <div id="licenseMsg" class="license-msg"></div>
     </div>
 
-    <!-- HERO PICKER SETUP -->
+    <!-- 1) HERO PICKER SETUP (Required first) -->
     <div class="card disabled" id="pickerSetupCard">
       <div class="pill">Hero Picker Setup</div>
-      <p class="muted" style="margin:8px 0 10px;line-height:1.5;">
+      <p class="muted" style="margin:10px 0 14px; line-height:1.5;">
         Enter your <b>Streamlabs Donation Page username</b> and a <b>default tip amount</b>.
         This powers the public hero picker and must be completed before anything else.
-        <br/>Example: if your donation link is <code>https://streamlabs.com/droopy2/tip</code>,
-        your username is <b>droopy2</b>.
+        <br/>Example: if your donation link is <code>https://streamlabs.com/droopy2/tip</code>, your username is <b>droopy2</b>.
       </p>
 
       <div class="grid two">
@@ -108,6 +120,7 @@
       </div>
 
       <hr class="divider" />
+
       <div class="muted">
         <div><b>Viewer Link</b> (share this with your chat after saving):</div>
         <div class="row" style="margin-top:6px;">
@@ -117,19 +130,118 @@
       </div>
     </div>
 
-    <!-- The rest of your setup, queue, and status sections stay identical -->
-    <!-- ... (everything below here is unchanged from v1.4) ... -->
+    <!-- 2) SETUP -->
+    <div class="card disabled" id="mainSetupCard">
+      <div class="flex-between">
+        <div class="pill">Setup</div>
+        <button class="btn secondary" id="toggleSetup">Collapse</button>
+      </div>
 
-    <footer>
-      Created by: <a href="https://twitch.tv/droopy" target="_blank">🟣 Droopy</a> — v1.4.1
-    </footer>
+      <div id="setupBody" style="margin-top:12px;">
+        <p class="muted" style="margin:0 0 8px;">
+          Enter your <b>Channel ID</b> (usually your Streamlabs/Twitch username). Optional: paste your
+          <b>Streamlabs Socket Token</b> to auto-queue from donations.
+        </p>
+
+        <div class="grid two">
+          <div>
+            <label>Channel ID</label>
+            <input id="channelId" type="text" placeholder="e.g., Droopy" />
+            <div class="muted">Your data lives at <code>/channels/&lt;yourID&gt;/...</code></div>
+          </div>
+          <div>
+            <label>Streamlabs Socket Token (optional)</label>
+            <input id="slToken" type="password" placeholder="Paste token for auto-queue on donations" />
+            <div class="muted">Leave blank if you’ll add heroes manually.</div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px%;">
+          <button class="btn" id="saveSetup">Save Setup</button>
+          <button class="btn secondary" id="testWrite">Test Firebase</button>
+          <button class="btn secondary" id="connectSL">Connect Streamlabs</button>
+          <span id="setupStatus" class="muted"></span>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="muted">
+          <div>Use this URL in an OBS Browser Source (your overlay):</div>
+          <div class="row" style="margin-top:6px;">
+            <code id="overlayUrl">https://droopy1943.github.io/Hero-picker/overlay.html?channel=demo</code>
+            <button class="btn secondary" id="copyOverlay">Copy</button>
+            <a class="btn secondary" id="openOverlay" href="#" target="_blank" rel="noopener">Open Overlay</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3) QUEUE -->
+    <div class="card disabled" id="queueCard">
+      <div class="flex-between">
+        <div class="pill">Queue</div>
+        <div class="row">
+          <button class="btn good" id="nextHero">Next Hero → Overlay</button>
+          <button class="btn warn" id="clearQueue">Clear Queue</button>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <div>
+          <label>Hero name</label>
+          <input id="manualHero" type="text" list="heroes" placeholder="Type or pick a hero..." />
+          <datalist id="heroes"><!-- populated from herolist.json --></datalist>
+        </div>
+        <div>
+          <label>Donor name (optional)</label>
+          <input id="manualDonor" type="text" placeholder="e.g., John" />
+        </div>
+        <div class="row" style="align-self:flex-end;">
+          <button class="btn" id="addManual">Add to Queue</button>
+        </div>
+      </div>
+
+      <ul id="queueList"></ul>
+    </div>
+
+    <!-- 4) STATUS -->
+    <div class="card disabled" id="statusCard">
+      <div class="flex-between">
+        <div class="pill">Status</div>
+        <div id="liveStatus" class="pill">Not connected</div>
+      </div>
+      <p id="log" class="muted" style="margin:10px 0 0;"></p>
+
+      <!-- hidden debug toggles (Shift+Click 'Status' pill to reveal) -->
+      <div id="debugPanel" class="muted hidden" style="margin-top:10px;">
+        <div class="row">
+          <button class="btn secondary" id="dbgRefresh">Force Refresh Queue</button>
+          <button class="btn secondary" id="dbgClearLS">Clear Local Storage</button>
+          <span id="dbgInfo"></span>
+        </div>
+      </div>
+    </div>
   </div>
 
+  <!-- footer watermark (always visible) -->
+  <div class="watermark">
+    <a href="https://twitch.tv/droopy" target="_blank" rel="noopener">
+      <span>Created by: <strong>Droopy</strong></span><span class="twitch-dot" title="Twitch"></span>
+    </a>
+    <div>v1.4.1</div>
+  </div>
+
+  <!-- toast (for non-license events) -->
   <div class="toast" id="toast">Saved</div>
 
+  <!-- socket.io for Streamlabs (optional) -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+  <!-- Firebase + app logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { getDatabase, ref, onValue, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
     // Firebase config
     const firebaseConfig = {
@@ -143,68 +255,310 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const db  = getDatabase(app);
+    const auth = getAuth(app);
+    await signInAnonymously(auth);
+
+    // DOM helpers
     const $ = id => document.getElementById(id);
-
-    const verifyBtn = $("verifyLicense");
-    const licenseMsg = $("licenseMsg");
-    const statusPill = $("licenseStatus");
-    const keyInput = $("licenseKey");
-    const channelInput = $("licenseChannel");
-    const pickerSetupCard = $("pickerSetupCard");
-
     const toast = $("toast");
     function showToast(msg){ toast.textContent=msg; toast.classList.add("show"); setTimeout(()=>toast.classList.remove("show"),1500); }
 
-    const LIC_KEY = "mr_license";
+    // Elements
+    const licenseCard = $("licenseCard");
+    const statusPill = $("licenseStatus");
+    const licenseMsg = $("licenseMsg");
+    const licenseKeyInput = $("licenseKey");
+    const licenseChannelInput = $("licenseChannel");
+    const verifyLicenseBtn = $("verifyLicense");
+    const resetLicenseBtn = $("resetLicense");
+    const LICENSE_KEY = "mr_license";
 
+    const slUserInput=$("slUser"), slAmountInput=$("slAmount"), savePickerBtn=$("savePickerSetup"), clearPicker=$("clearPickerSetup"), pickerSavedMsg=$("pickerSavedMsg"), viewerLinkEl=$("viewerLink"), copyViewerBtn=$("copyViewer");
+    const toggleSetupBtn=$("toggleSetup"), setupBody=$("setupBody"), channelIdInput=$("channelId"), slTokenInput=$("slToken"), saveSetupBtn=$("saveSetup"), testWriteBtn=$("testWrite"), connectSLBtn=$("connectSL"), setupStatus=$("setupStatus"), overlayUrlEl=$("overlayUrl"), copyOverlayBtn=$("copyOverlay"), openOverlayA=$("openOverlay");
+    const manualHero=$("manualHero"), manualDonor=$("manualDonor"), addManualBtn=$("addManual"), nextBtn=$("nextHero"), clearBtn=$("clearQueue"), queueList=$("queueList"), liveStatus=$("liveStatus"), logEl=$("log");
+    const heroesDL = $("heroes");
+
+    // Persist keys
+    const CFG_KEY="mr_cfg", PKR_KEY="mr_picker";
+
+    // Load saved to inputs (doesn't unlock UI by itself)
+    const cfg  = JSON.parse(localStorage.getItem(CFG_KEY) || "{}");
+    const pkr  = JSON.parse(localStorage.getItem(PKR_KEY) || "{}");
+    if (cfg.channelId) channelIdInput.value = cfg.channelId;
+    if (cfg.slToken)   slTokenInput.value   = cfg.slToken;
+    if (pkr.slUser)    slUserInput.value    = pkr.slUser;
+    if (pkr.amount)    slAmountInput.value  = pkr.amount;
+
+    // Computed paths
+    const cid = () => (channelIdInput.value||"").trim() || (JSON.parse(localStorage.getItem(LICENSE_KEY)||"null")?.channel || "demo");
+    const qRef = () => ref(db, `/channels/${cid()}/queue`);
+    const curRef = () => ref(db, `/channels/${cid()}/current`);
+    const settingsRef = () => ref(db, `/channels/${cid()}/settings`);
+
+    function setOverlayUrl(){
+      const url = `https://droopy1943.github.io/Hero-picker/overlay.html?channel=${encodeURIComponent(cid())}`;
+      overlayUrlEl.textContent = url;
+      openOverlayA.href = url;
+    }
+    function setViewerLink(){
+      const ch = cid();
+      const slUser = (slUserInput.value||"").trim();
+      const amt = (slAmountInput.value||"").trim();
+      viewerLinkEl.textContent = (slUser && amt && ch)
+        ? `https://droopy1943.github.io/Hero-picker/heroes.html?channel=${encodeURIComponent(ch)}`
+        : "— not generated yet —";
+    }
+
+    // Lock/unlock helpers
+    function lockAll(locked){
+      const cards = [$("pickerSetupCard"), $("mainSetupCard"), $("queueCard"), $("statusCard")];
+      cards.forEach(c => c.classList.toggle("disabled", !!locked));
+    }
+
+    // License verify
     async function verifyLicense(manual=false){
-      const key = keyInput.value.trim();
-      const ch = channelInput.value.trim();
+      const key=licenseKeyInput.value.trim();
+      const ch =licenseChannelInput.value.trim();
       if (!key || !ch){
         licenseMsg.textContent = "⚠️ Please enter both fields.";
         licenseMsg.className = "license-msg bad";
-        return;
+        statusPill.textContent = "Unlicensed";
+        statusPill.className = "status-pill bad";
+        lockAll(true);
+        return false;
       }
-
-      try {
+      try{
         const path = `/channels/${ch}/licenses/${key}`;
         const snap = await get(ref(db, path));
         const val = snap.val();
-        if (val && val.active){
+        if (val && (val.active===true || val.valid===true)){
+          localStorage.setItem(LICENSE_KEY, JSON.stringify({ key, channel: ch }));
           statusPill.textContent = "Licensed";
           statusPill.className = "status-pill good";
-          licenseMsg.textContent = "✅ License verified for " + (val.assignedTo || ch);
+          licenseMsg.textContent = "✅ License verified" + (val.assignedTo ? ` for ${val.assignedTo}` : "");
           licenseMsg.className = "license-msg good";
-          localStorage.setItem(LIC_KEY, JSON.stringify({ key, ch }));
-          unlockUI();
+          resetLicenseBtn.classList.remove("hidden");
+          licenseCard.classList.add("hidden");
+          lockAll(false);
+          setOverlayUrl(); setViewerLink();
+          return true;
         } else {
           licenseMsg.textContent = "❌ Invalid or inactive key.";
           licenseMsg.className = "license-msg bad";
           statusPill.textContent = "Unlicensed";
           statusPill.className = "status-pill bad";
+          lockAll(true);
+          return false;
         }
-      } catch (e) {
+      }catch(e){
+        console.error(e);
         licenseMsg.textContent = "⚠️ Network error — try again.";
         licenseMsg.className = "license-msg bad";
+        statusPill.textContent = "Unlicensed";
+        statusPill.className = "status-pill bad";
+        lockAll(true);
+        return false;
       }
     }
 
-    verifyBtn.onclick = ()=>verifyLicense(true);
+    $("verifyLicense").onclick = ()=>verifyLicense(true);
+    $("resetLicense").onclick = ()=>{
+      localStorage.removeItem(LICENSE_KEY);
+      licenseMsg.textContent = "";
+      statusPill.textContent = "Unlicensed";
+      statusPill.className = "status-pill bad";
+      licenseCard.classList.remove("hidden");
+      lockAll(true);
+    };
 
-    function unlockUI(){
-      [pickerSetupCard].forEach(c=>c.classList.remove("disabled"));
-    }
-
-    // Auto-verify stored license
-    window.addEventListener("DOMContentLoaded", async ()=>{
-      const saved = JSON.parse(localStorage.getItem(LIC_KEY) || "null");
-      if (saved && saved.key && saved.ch){
-        keyInput.value = saved.key;
-        channelInput.value = saved.ch;
-        await verifyLicense();
+    // Silent re-verify on load
+    (async()=>{
+      lockAll(true);
+      const saved = JSON.parse(localStorage.getItem(LICENSE_KEY) || "null");
+      if(saved?.key && saved?.channel){
+        licenseKeyInput.value = saved.key;
+        licenseChannelInput.value = saved.channel;
+        await verifyLicense(false);
       }
+      setOverlayUrl(); setViewerLink();
+    })();
+
+    // Debounce helper
+    function debounce(fn, ms=600){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+
+    // Autosave: picker + cfg (only when licensed)
+    const autoSavePicker = debounce(()=>{
+      const slUser=(slUserInput.value||"").trim();
+      const amount=(slAmountInput.value||"").trim();
+      if(!slUser || !amount) return;
+      localStorage.setItem(PKR_KEY, JSON.stringify({ slUser, amount }));
+      set(settingsRef(), { streamlabsUser: slUser, defaultAmount: amount, channelId: cid() })
+        .then(()=>{ $("pickerSavedMsg").textContent="Saved ✔"; setViewerLink(); setTimeout(()=>$("pickerSavedMsg").textContent="",1400); })
+        .catch(()=>{});
     });
+    const autoSaveCfg = debounce(()=>{
+      const payload = { channelId: (channelIdInput.value||"").trim(), slToken: (slTokenInput.value||"").trim() };
+      localStorage.setItem(CFG_KEY, JSON.stringify(payload));
+      setOverlayUrl(); setViewerLink();
+      $("setupStatus").textContent="Saved ✔"; $("setupStatus").style.color="#2ecc71";
+      setTimeout(()=>{ $("setupStatus").textContent=""; $("setupStatus").removeAttribute("style"); }, 1400);
+      resubscribeQueue();
+    });
+
+    // Bind inputs
+    slUserInput.addEventListener("input", ()=>{ if(statusPill.classList.contains("good")) autoSavePicker(); });
+    slAmountInput.addEventListener("input", ()=>{ if(statusPill.classList.contains("good")) autoSavePicker(); });
+    channelIdInput.addEventListener("input", ()=>{ if(statusPill.classList.contains("good")) autoSaveCfg(); });
+    slTokenInput.addEventListener("input", ()=>{ if(statusPill.classList.contains("good")) autoSaveCfg(); });
+
+    // Manual buttons still work (for folks who prefer clicking)
+    $("savePickerSetup").onclick = ()=>{ if(statusPill.classList.contains("good")) autoSavePicker(); };
+    $("saveSetup").onclick = ()=>{ if(statusPill.classList.contains("good")) autoSaveCfg(); };
+
+    // Copy buttons
+    $("copyViewer").onclick = async ()=>{ try{await navigator.clipboard.writeText($("viewerLink").textContent); $("copyViewer").textContent="Copied!"; setTimeout(()=>$("copyViewer").textContent="Copy",900);}catch{} };
+    $("copyOverlay").onclick = async ()=>{ try{await navigator.clipboard.writeText($("overlayUrl").textContent); $("copyOverlay").textContent="Copied!"; setTimeout(()=>$("copyOverlay").textContent="Copy",900);}catch{} };
+
+    // Collapse setup
+    $("toggleSetup").onclick = ()=>{
+      const hide = !$("setupBody").classList.contains("hidden");
+      $("setupBody").classList.toggle("hidden", hide);
+      $("toggleSetup").textContent = hide ? "Expand" : "Collapse";
+    };
+
+    // Clear picker local only
+    $("clearPickerSetup").onclick = ()=>{
+      localStorage.removeItem(PKR_KEY);
+      slUserInput.value=""; slAmountInput.value="";
+      setViewerLink(); $("pickerSavedMsg").textContent="";
+      showToast("🧹 Picker setup cleared");
+    };
+
+    // herolist.json → datalist
+    (async()=>{
+      try{
+        const res = await fetch("./herolist.json", { cache: "no-store" });
+        const list = await res.json();
+        const names = Array.isArray(list) ? list : (Array.isArray(list?.heroes) ? list.heroes : []);
+        const items = names.length ? names : ["Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America","Cloak & Dagger","Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk","Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark","Loki","Luna Snow","Magik","Magneto","Mantis","Mister Fantastic","Moon Knight","Namor","Peni Parker","Phoenix","Psylocke","The Punisher","The Thing","Rocket Raccoon","Scarlet Witch","Squirrel Girl","Spider-Man","Star-Lord","Storm","Thor","Ultron","Venom","Winter Soldier","Wolverine"];
+        heroesDL.innerHTML = items.map(h=>`<option>${escapeHTML(h)}</option>`).join("");
+      }catch(e){
+        console.warn("herolist.json load failed, using fallback", e);
+      }
+    })();
+
+    // Live queue subscription
+    let unsub = null;
+    function resubscribeQueue(){
+      if (unsub) unsub();
+      const off = onValue(qRef(), (snap)=>{
+        const obj = snap.val() || {};
+        const items = Object.entries(obj).map(([key,val])=>({key, ...(val||{})}));
+        items.sort((a,b)=> (a.ts||0)-(b.ts||0));
+        renderQueue(items);
+      });
+      unsub = ()=> off();
+      liveStatus.textContent = `Listening @ /channels/${cid()}/queue`;
+    }
+    resubscribeQueue();
+
+    function renderQueue(items){
+      queueList.innerHTML = "";
+      items.forEach((it,i)=>{
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <div>#${i+1} — <strong>${sanitize(it.hero||"")}</strong> ${it.donor?`<span class="muted">by ${sanitize(it.donor)}</span>`:""}</div>
+          <div class="muted">${it.ts? new Date(it.ts).toLocaleTimeString():""}</div>`;
+        queueList.appendChild(li);
+      });
+    }
+
+    // Queue actions (require license)
+    $("addManual").onclick = async ()=>{
+      if(!isLicensed()) return alert("Enter a valid license first.");
+      const hero = (manualHero.value||"").trim();
+      if (!hero) return alert("Enter a hero name.");
+      const donor = (manualDonor.value||"").trim();
+      await push(qRef(), { hero, donor: donor||null, amount:null, ts:Date.now() });
+      manualHero.value = ""; manualDonor.value = "";
+      log(`Added to queue: ${hero}${donor?` by ${donor}`:""}`);
+    };
+
+    $("nextHero").onclick = async ()=>{
+      if(!isLicensed()) return alert("Enter a valid license first.");
+      const snap = await get(qRef());
+      const obj = snap.val();
+      if (!obj) return alert("Queue empty.");
+      const entries = Object.entries(obj).map(([k,v])=>({k,v}));
+      entries.sort((a,b)=> (a.v?.ts||0) - (b.v?.ts||0));
+      const first = entries[0];
+      if (!first) return;
+      await set(curRef(), first.v);
+      await remove(ref(db, `/channels/${cid()}/queue/${first.k}`));
+      log(`Sent to overlay: ${first.v.hero}${first.v.donor?` by ${first.v.donor}`:""}`);
+    };
+
+    $("clearQueue").onclick = async ()=>{
+      if(!isLicensed()) return alert("Enter a valid license first.");
+      if (!confirm("Clear ALL items from the queue?")) return;
+      await remove(qRef());
+      log("Queue cleared.");
+    };
+
+    $("testWrite").onclick = async ()=>{
+      if(!isLicensed()) return alert("Enter a valid license first.");
+      await push(qRef(), { hero:"Blade", donor:"Test", ts: Date.now() });
+      log("Test: wrote Blade to your queue.");
+      alert("✅ Test wrote to Firebase. Check the Queue list below.");
+    };
+
+    // Streamlabs socket
+    let socket;
+    $("connectSL").onclick = ()=>{
+      if(!isLicensed()) return alert("Enter a valid license first.");
+      const token = (slTokenInput.value||"").trim();
+      if (!token) return alert("Paste your Streamlabs Socket Token first.");
+      if (socket?.connected) socket.disconnect();
+      socket = io("https://sockets.streamlabs.com", { transports:["websocket"], query:{ token }});
+      socket.on("connect", ()=> log("Streamlabs socket: connected"));
+      socket.on("disconnect", ()=> log("Streamlabs socket: disconnected"));
+      socket.on("event", async (eventData)=>{
+        if (eventData.type !== "donation") return;
+        const arr = Array.isArray(eventData.message) ? eventData.message : [eventData.message];
+        for (const m of arr){
+          const name = m.name || "Anonymous";
+          const amount = Number(m.amount||0);
+          const note = (m.message||"")+"";
+          const match = note.match(/I\s*want\s*to\s*request\s*\[([^\]]+)\]/i);
+          if (!match) continue;
+          const hero = match[1].trim();
+          await push(qRef(), { hero, donor:name, amount, ts:Date.now() });
+          log(`Donation queued: ${hero} by ${name} ($${amount})`);
+        }
+      });
+      alert("Connected to Streamlabs. Leave this page open during your stream.");
+    };
+
+    // Debug tools (Shift+Click 'Status' pill)
+    $("statusCard").querySelector(".pill").addEventListener("click", (e)=>{
+      if (e.shiftKey){ $("debugPanel").classList.toggle("hidden"); updateDbg(); }
+    });
+    $("dbgRefresh").onclick = ()=> resubscribeQueue();
+    $("dbgClearLS").onclick = ()=>{
+      localStorage.removeItem(CFG_KEY);
+      localStorage.removeItem(PKR_KEY);
+      localStorage.removeItem(LICENSE_KEY);
+      showToast("Local storage cleared");
+      location.reload();
+    };
+    function updateDbg(){ $("dbgInfo").textContent = `Path: /channels/${cid()}/*  | Licensed: ${isLicensed()}`; }
+
+    // Utils
+    function isLicensed(){ return statusPill.classList.contains("good"); }
+    function sanitize(s){return (s||"").replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}
+    function escapeHTML(s){return sanitize(s);}
+    function log(msg){ logEl.textContent = `[${new Date().toLocaleTimeString()}] ${msg}\n` + (logEl.textContent||""); }
   </script>
 </body>
 </html>
