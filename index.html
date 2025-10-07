@@ -133,20 +133,31 @@
     function buildGrid() {
       heroGrid.innerHTML = "";
       heroes.forEach(hero => {
-        const heroCard = document.createElement("div");
-        heroCard.className = "hero-card";
-        const safeHero = hero.replace(/&/g, "and");
-        heroCard.innerHTML = `
-          <img src="images/${safeHero}.png" alt="${hero}">
-          <div class="hero-name">${hero}</div>
-        `;
-        heroCard.onclick = () => {
-          const msg = encodeURIComponent(`I want to request ${hero}`);
-          const url = `https://streamlabs.com/${streamlabsUser}/tip?amount=${defaultAmount}&message=${msg}`;
-          window.open(url, "_blank");
-        };
-        heroGrid.appendChild(heroCard);
-      });
+  const card = document.createElement("div");
+  card.className = "hero-card";
+  
+  // Create image safely
+  const img = document.createElement("img");
+  img.src = `images/${hero}.png`;
+  img.alt = hero;
+  
+  // Create label
+  const label = document.createElement("div");
+  label.className = "hero-name";
+  label.textContent = hero; // Use textContent to avoid HTML escaping issues
+  
+  card.appendChild(img);
+  card.appendChild(label);
+  
+  // Click handler
+  card.addEventListener("click", () => {
+    const amount = localStorage.getItem("defaultAmount") || 5;
+    const donationUrl = `https://droopy.tv/tip?amount=${amount}&message=I want to request ${encodeURIComponent(hero)}`;
+    window.open(donationUrl, "_blank");
+  });
+
+  heroGrid.appendChild(card);
+});
     }
 
     loadSettings();
