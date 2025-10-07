@@ -254,5 +254,13 @@ const aliases = {
       newDonation(cur.hero.trim(), cur.donor);
     });
   </script>
+  <script>
+  // Temporary testing helper — lets you manually trigger heroes
+  window.testHero = function(heroName) {
+    console.log("Testing hero:", heroName);
+    newDonation(heroName, "Test");
+  };
+</script>
+
 </body>
 </html>
