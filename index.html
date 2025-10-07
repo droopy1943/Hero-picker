@@ -1,93 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Pick Your Hero</title>
-<style>
-  body {
-    background: #0b0b0d;
-    color: white;
-    font-family: 'Comic Sans MS', sans-serif;
-    text-align: center;
-    padding: 20px;
-  }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Droopy Hero Picker</title>
+  <style>
+    body {
+      background-color: #0d0d0d;
+      color: #fff;
+      font-family: "Poppins", sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
 
-  h1 {
-    color: #ff3b3b;
-    text-shadow: 2px 2px 5px #000;
-  }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
 
-  .hero-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 14px;
-    margin-top: 20px;
-  }
+    #heroGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
 
-  .hero-card {
-    background: rgba(255,255,255,0.05);
-    border: 2px solid #ff3b3b;
-    border-radius: 10px;
-    padding: 10px;
-    transition: transform 0.15s ease, border-color 0.2s;
-  }
+    .hero-card {
+      background-color: #1a1a1a;
+      border: 2px solid #c0392b;
+      border-radius: 10px;
+      padding: 10px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
 
-  .hero-card:hover {
-    transform: scale(1.05);
-    border-color: #ffd33b;
-    cursor: pointer;
-  }
+    .hero-card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 10px #ff4757;
+    }
 
-  .hero-card img {
-    width: 100%;
-    border-radius: 6px;
-    object-fit: cover;
-  }
+    .hero-card img {
+      width: 100%;
+      border-radius: 8px;
+      object-fit: cover;
+    }
 
-  .hero-name {
-    font-weight: bold;
-    margin-top: 6px;
-    color: #fff;
-    text-shadow: 1px 1px 3px #000;
-  }
+    .hero-name {
+      margin-top: 8px;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
 
-  footer {
-    margin-top: 30px;
-    color: #aaa;
-    font-size: 14px;
-  }
+    footer {
+      margin-top: 25px;
+      color: #888;
+      font-size: 0.8rem;
+    }
 
-  footer a {
-    color: #9146FF;
-    text-decoration: none;
-  }
+    footer a {
+      color: #7289da;
+      text-decoration: none;
+    }
 
-  footer a:hover {
-    text-decoration: underline;
-  }
-
-  .twitch-icon {
-    width: 16px;
-    vertical-align: middle;
-    margin-right: 4px;
-  }
-</style>
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
-  <h1>Pick Your Hero</h1>
+  <h1>Pick Your Marvel Rivals Hero</h1>
+  <p>Select your favorite hero to send a request to the streamer!</p>
 
-  <div id="heroGrid" class="hero-grid"></div>
+  <div id="heroGrid"></div>
 
   <footer>
-    <a href="https://twitch.tv/droopy" target="_blank">
-      <img class="twitch-icon" src="https://cdn-icons-png.flaticon.com/512/5968/5968819.png" alt="Twitch">
-      Created by Droopy
-    </a>
+    Created by <a href="https://twitch.tv/droopy" target="_blank">🟣 Droopy</a>
   </footer>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { getDatabase } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
@@ -104,7 +97,7 @@
 
     const heroes = [
       "Adam Warlock", "Angela", "Black Panther", "Black Widow", "Blade", "Captain America",
-      "Cloak &#38; Dagger", "Doctor Strange", "Emma Frost", "Groot", "Hawkeye", "Hela", "Hulk",
+      "Cloak & Dagger", "Doctor Strange", "Emma Frost", "Groot", "Hawkeye", "Hela", "Hulk",
       "Human Torch", "Invisible Woman", "Iron Fist", "Iron Man", "Jeff the Land Shark", "Loki",
       "Luna Snow", "Magik", "Magneto", "Mantis", "Mister Fantastic", "Moon Knight", "Namor",
       "Peni Parker", "Phoenix", "Psylocke", "The Punisher", "The Thing", "Rocket Raccoon",
@@ -115,52 +108,32 @@
     const heroGrid = document.getElementById("heroGrid");
     const params = new URLSearchParams(location.search);
     const channelId = params.get("channel") || "demo";
+    const amount = params.get("amount") || 5;
 
-    let streamlabsUser = "droopy";  // fallback
-    let defaultAmount = 5;          // fallback
+    heroes.forEach(hero => {
+      const card = document.createElement("div");
+      card.classList.add("hero-card");
 
-    async function loadSettings() {
-      const settingsRef = ref(db, `/channels/${channelId}/settings`);
-      const snap = await get(settingsRef);
-      if (snap.exists()) {
-        const data = snap.val();
-        if (data.streamlabsUser) streamlabsUser = data.streamlabsUser;
-        if (data.defaultAmount) defaultAmount = data.defaultAmount;
-      }
-      buildGrid();
-    }
+      const img = document.createElement("img");
+      // ✅ Use URL encoding to support & and spaces in filenames
+      img.src = `images/${encodeURIComponent(hero)}.png`;
+      img.alt = hero;
 
-    function buildGrid() {
-      heroGrid.innerHTML = "";
-      heroes.forEach(hero => {
-  const card = document.createElement("div");
-  card.className = "hero-card";
-  
-  // Create image safely
-  const img = document.createElement("img");
-  img.src = `images/${hero}.png`;
-  img.alt = hero;
-  
-  // Create label
-  const label = document.createElement("div");
-  label.className = "hero-name";
-  label.textContent = hero; // Use textContent to avoid HTML escaping issues
-  
-  card.appendChild(img);
-  card.appendChild(label);
-  
-  // Click handler
-  card.addEventListener("click", () => {
-    const amount = localStorage.getItem("defaultAmount") || 5;
-    const donationUrl = `https://droopy.tv/tip?amount=${amount}&message=I want to request ${encodeURIComponent(hero)}`;
-    window.open(donationUrl, "_blank");
-  });
+      const name = document.createElement("div");
+      name.classList.add("hero-name");
+      name.textContent = hero;
 
-  heroGrid.appendChild(card);
-});
-    }
+      card.appendChild(img);
+      card.appendChild(name);
 
-    loadSettings();
+      card.onclick = () => {
+        const message = encodeURIComponent(`I want to request ${hero}`);
+        const url = `https://droopy.tv/tip?amount=${amount}&message=${message}&channel=${channelId}`;
+        window.open(url, "_blank");
+      };
+
+      heroGrid.appendChild(card);
+    });
   </script>
 </body>
 </html>
