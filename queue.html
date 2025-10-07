@@ -144,184 +144,138 @@
 
   <!-- Firebase (modular) -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, onValue, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { getDatabase, ref, onValue, set, get, remove, child } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-    // ✅ Your working config (same as overlay). If you changed it, paste the current one.
-    const firebaseConfig = {
-      apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
-      authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
-      databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
-      projectId: "marvel-rivals-overlay-7f867",
-      storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
-      messagingSenderId: "1078364810175",
-      appId: "1:1078364810175:web:fac410007b70b65e348f0a"
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
+    authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
+    databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+    projectId: "marvel-rivals-overlay-7f867",
+    storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
+    messagingSenderId: "1078364810175",
+    appId: "1:1078364810175:web:fac410007b70b65e348f0a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // UI Elements
+  const statusBox = document.querySelector(".status");
+  const heroInput = document.querySelector("input[placeholder='Type or pick a hero...']");
+  const donorInput = document.querySelector("input[placeholder='e.g., John']");
+  const queueContainer = document.querySelector(".queue-list");
+  const saveBtn = document.querySelector("button.save-setup");
+  const nextHeroBtn = document.querySelector("button.next-hero");
+  const clearQueueBtn = document.querySelector("button.clear-queue");
+
+  let channelId = localStorage.getItem("channelId") || "demo";
+
+  // Update status display
+  function logStatus(msg) {
+    const time = new Date().toLocaleTimeString();
+    statusBox.innerHTML = `[${time}] ${msg}<br>` + statusBox.innerHTML;
+  }
+
+  // Firebase references
+  function getRefs() {
+    const base = `/channels/${channelId}`;
+    return {
+      queueRef: ref(db, `${base}/queue`),
+      currentRef: ref(db, `${base}/current`),
     };
+  }
 
-    // --- Init ---
-    const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
-    const auth = getAuth(app);
-    await signInAnonymously(auth);
+  // Load queue from Firebase
+  async function refreshQueue() {
+    const { queueRef } = getRefs();
+    const snap = await get(queueRef);
+    const queue = snap.exists() ? Object.values(snap.val()) : [];
+    renderQueue(queue);
+  }
 
-    // --- DOM ---
-    const $ = id => document.getElementById(id);
-    const toggleSetupBtn = $("toggleSetup");
-    const setupBody = $("setupBody");
-    const channelIdInput = $("channelId");
-    const slTokenInput = $("slToken");
-    const saveSetupBtn = $("saveSetup");
-    const testWriteBtn = $("testWrite");
-    const connectSLBtn = $("connectSL");
-    const setupStatus  = $("setupStatus");
-    const overlayUrlEl = $("overlayUrl");
-    const copyUrlBtn   = $("copyUrl");
-    const openOverlayA = $("openOverlay");
+  // Display queue in UI
+  function renderQueue(queue) {
+    queueContainer.innerHTML = "";
+    queue.forEach((entry, i) => {
+      const item = document.createElement("div");
+      item.className = "queue-item";
+      item.innerHTML = `<b>#${i + 1} — ${entry.hero}</b> ${entry.donor ? "by " + entry.donor : ""}`;
+      queueContainer.appendChild(item);
+    });
+  }
 
-    const manualHero   = $("manualHero");
-    const manualDonor  = $("manualDonor");
-    const addManualBtn = $("addManual");
-    const nextBtn      = $("nextHero");
-    const clearBtn     = $("clearQueue");
-    const queueList    = $("queueList");
-    const liveStatus   = $("liveStatus");
-    const logEl        = $("log");
+  // Add hero to Firebase queue
+  async function addHeroToQueue(hero, donor) {
+    const { queueRef } = getRefs();
+    const snap = await get(queueRef);
+    const currentQueue = snap.exists() ? Object.values(snap.val()) : [];
+    const newQueue = [...currentQueue, { hero, donor, ts: Date.now() }];
+    await set(queueRef, newQueue);
+    logStatus(`Added to queue: ${hero} ${donor ? "by " + donor : ""}`);
+    refreshQueue();
+  }
 
-    // --- Config persistence ---
-    const CFG_KEY = "mr_cfg";
-    const cfg = JSON.parse(localStorage.getItem(CFG_KEY) || "{}");
-    if (cfg.channelId) channelIdInput.value = cfg.channelId;
-    if (cfg.slToken) slTokenInput.value = cfg.slToken;
-
-    function cid(){ return (channelIdInput.value || "").trim() || "demo"; }
-    function qRef(){ return ref(db, `/channels/${cid()}/queue`); }
-    function curRef(){ return ref(db, `/channels/${cid()}/current`); }
-
-    function setOverlayUrl(){
-      const url = `https://droopy1943.github.io/Hero-picker/overlay.html?channel=${encodeURIComponent(cid())}`;
-      overlayUrlEl.textContent = url;
-      openOverlayA.href = url;
-    }
-    setOverlayUrl();
-
-    // Collapse
-    toggleSetupBtn.onclick = () => {
-      setupBody.classList.toggle("hidden");
-      toggleSetupBtn.textContent = setupBody.classList.contains("hidden") ? "Expand" : "Collapse";
-    };
-
-    // Save settings
-    saveSetupBtn.onclick = ()=>{
-      const payload = { channelId: cid(), slToken: (slTokenInput.value || "").trim() };
-      localStorage.setItem(CFG_KEY, JSON.stringify(payload));
-      setOverlayUrl();
-      setupStatus.textContent = "Saved ✔";
-      setupStatus.style.color = "#2ecc71";
-      setTimeout(()=>{ setupStatus.textContent=""; setupStatus.removeAttribute("style"); }, 1400);
-      log(`Saved settings for channel: ${payload.channelId}`);
-      resubscribeQueue();
-    };
-
-    copyUrlBtn.onclick = async ()=>{
-      try{ await navigator.clipboard.writeText(overlayUrlEl.textContent); copyUrlBtn.textContent="Copied!"; setTimeout(()=>copyUrlBtn.textContent="Copy",1000);}catch{}
-    };
-
-    // --- Queue live view (Firebase source of truth) ---
-    let unsub = null;
-    function resubscribeQueue(){
-      if (unsub) unsub(); // detach previous listener
-      const off = onValue(qRef(), (snap)=>{
-        const obj = snap.val() || {};
-        // Turn object-of-keys (push ids) into array sorted by ts
-        const arr = Object.entries(obj).map(([key, val])=>({key, ...(val||{})}));
-        arr.sort((a,b)=> (a.ts||0)-(b.ts||0));
-        renderQueue(arr);
-      });
-      unsub = ()=> off(); // store detach
-      liveStatus.textContent = `Listening @ /channels/${cid()}/queue`;
-    }
-    resubscribeQueue();
-
-    function renderQueue(items){
-      queueList.innerHTML = "";
-      items.forEach((it, i)=>{
-        const li = document.createElement("li");
-        li.innerHTML = `
-          <div>#${i+1} — <strong>${sanitize(it.hero||"")}</strong> ${it.donor ? `<span class="muted">by ${sanitize(it.donor)}</span>`:""} ${it.amount? `<span class="badge">$${it.amount}</span>`:""}</div>
-          <div class="muted">${it.ts? new Date(it.ts).toLocaleTimeString(): ""}</div>
-        `;
-        queueList.appendChild(li);
-      });
+  // Move next hero to overlay
+  async function sendNextHero() {
+    const { queueRef, currentRef } = getRefs();
+    const snap = await get(queueRef);
+    if (!snap.exists()) {
+      logStatus("Queue is empty!");
+      return;
     }
 
-    // Add to Queue
-    addManualBtn.onclick = async ()=>{
-      const hero = (manualHero.value||"").trim();
-      const donor = (manualDonor.value||"").trim();
-      if (!hero) return alert("Enter a hero name.");
-      await push(qRef(), { hero, donor: donor || null, amount: null, ts: Date.now() });
-      manualHero.value = ""; manualDonor.value = "";
-      log(`Added to queue: ${hero}${donor?` by ${donor}`:""}`);
-    };
+    const queue = Object.values(snap.val());
+    const nextHero = queue.shift(); // remove first
+    if (!nextHero) return;
 
-    // Next Hero → Overlay
-    nextBtn.onclick = async ()=>{
-      const snap = await get(qRef());
-      const obj = snap.val();
-      if (!obj) return alert("Queue empty.");
-      // find earliest by ts
-      const entries = Object.entries(obj).map(([k,v])=>({k, v}));
-      entries.sort((a,b)=> (a.v?.ts||0) - (b.v?.ts||0));
-      const first = entries[0];
-      await set(curRef(), first.v);      // set /current
-      await remove(ref(db, `${qRef().toJSON().path.pieces_.join('/')}/${first.k}`)); // remove that item
-      log(`Sent to overlay: ${first.v.hero}${first.v.donor?` by ${first.v.donor}`:""}`);
-    };
+    await set(currentRef, nextHero); // update overlay
+    await set(queueRef, queue); // update queue after removing
+    logStatus(`Sent ${nextHero.hero} to overlay.`);
+    refreshQueue();
+  }
 
-    // Clear Queue
-    clearBtn.onclick = async ()=>{
-      if (!confirm("Clear ALL items from the queue?")) return;
-      await remove(qRef());
-      log("Queue cleared.");
-    };
+  // Clear Firebase queue
+  async function clearQueue() {
+    const { queueRef } = getRefs();
+    await remove(queueRef);
+    logStatus("Cleared queue.");
+    refreshQueue();
+  }
 
-    // Test Firebase
-    testWriteBtn.onclick = async ()=>{
-      await push(qRef(), { hero:"Blade", donor:"Test", ts:Date.now() });
-      log("Test: wrote Blade to your queue.");
-      alert("✅ Test wrote to Firebase. Check your Queue list below.");
-    };
+  // Hook up button actions
+  document.querySelector("button.add-to-queue").onclick = () => {
+    const hero = heroInput.value.trim();
+    if (!hero) return;
+    const donor = donorInput.value.trim();
+    addHeroToQueue(hero, donor);
+    heroInput.value = "";
+    donorInput.value = "";
+  };
 
-    // Optional Streamlabs hook (donations → queue)
-    let socket;
-    connectSLBtn.onclick = ()=>{
-      const token = (slTokenInput.value||"").trim();
-      if (!token) return alert("Paste your Streamlabs Socket Token first.");
-      if (socket?.connected) socket.disconnect();
-      socket = io("https://sockets.streamlabs.com", { transports:["websocket"], query:{ token }});
-      socket.on("connect", ()=> log("Streamlabs socket: connected"));
-      socket.on("disconnect", ()=> log("Streamlabs socket: disconnected"));
-      socket.on("event", async (eventData)=>{
-        if (eventData.type !== "donation") return;
-        const arr = Array.isArray(eventData.message) ? eventData.message : [eventData.message];
-        for (const m of arr){
-          const name = m.name || "Anonymous";
-          const amount = Number(m.amount||0);
-          const note = (m.message||"")+"";
-          const match = note.match(/I\s*want\s*to\s*request\s*\[([^\]]+)\]/i);
-          if (!match) continue;
-          const hero = match[1].trim();
-          await push(qRef(), { hero, donor:name, amount, ts:Date.now() });
-          log(`Donation queued: ${hero} by ${name} ($${amount})`);
-        }
-      });
-      alert("Connected to Streamlabs. Leave this page open while streaming.");
-    };
+  nextHeroBtn.onclick = sendNextHero;
+  clearQueueBtn.onclick = clearQueue;
 
-    // Helpers
-    function sanitize(s){return (s||"").replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}
-    function log(msg){ logEl.textContent = `[${new Date().toLocaleTimeString()}] ${msg}\n` + (logEl.textContent||""); }
-  </script>
+  saveBtn.onclick = () => {
+    const inputVal = document.querySelector("input[placeholder='Droopy']").value.trim();
+    if (!inputVal) return alert("Please enter your channel ID first!");
+    channelId = inputVal;
+    localStorage.setItem("channelId", channelId);
+    logStatus(`Saved settings for channel: ${channelId}`);
+    refreshQueue();
+  };
+
+  // Auto-load queue and watch for changes
+  refreshQueue();
+  onValue(ref(db, `/channels/${channelId}/queue`), (snap) => {
+    if (!snap.exists()) {
+      queueContainer.innerHTML = "<i>Queue is empty</i>";
+      return;
+    }
+    renderQueue(Object.values(snap.val()));
+  });
+</script>
+
 </body>
 </html>
