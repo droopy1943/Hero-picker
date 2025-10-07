@@ -1,0 +1,11 @@
+{
+  "heroes": [
+    { "name": "Blade", "file": "blade.png" },
+    { "name": "Iron Man", "file": "ironman.png" },
+    { "name": "Doctor Strange", "file": "doctorstrange.png" },
+    { "name": "Thor", "file": "thor.png" },
+    { "name": "Scarlet Witch", "file": "scarletwitch.png" },
+    { "name": "Hulk", "file": "hulk.png" },
+    { "name": "Captain America", "file": "captainamerica.png" }
+  ]
+}
