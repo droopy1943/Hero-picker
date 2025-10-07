@@ -71,6 +71,12 @@
     footer a:hover {
       text-decoration: underline;
     }
+
+    #loading {
+      color: #999;
+      margin-top: 40px;
+      font-size: 1rem;
+    }
   </style>
 </head>
 <body>
@@ -78,6 +84,7 @@
   <p>Select your favorite hero to send a request to the streamer!</p>
 
   <div id="heroGrid"></div>
+  <div id="loading">Loading heroes...</div>
 
   <footer>
     Created by <a href="https://twitch.tv/droopy" target="_blank">🟣 Droopy</a>
@@ -111,10 +118,10 @@
     ];
 
     const heroGrid = document.getElementById("heroGrid");
+    const loading = document.getElementById("loading");
     const params = new URLSearchParams(location.search);
     const channelId = params.get("channel") || "demo";
 
-    // Function to load channel settings from Firebase
     async function loadSettings() {
       try {
         const settingsRef = ref(db, `/channels/${channelId}/settings`);
@@ -130,6 +137,7 @@
     }
 
     function renderHeroes(streamlabsUser, defaultAmount) {
+      loading.remove();
       heroes.forEach(hero => {
         const card = document.createElement("div");
         card.classList.add("hero-card");
