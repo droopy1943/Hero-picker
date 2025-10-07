@@ -38,24 +38,16 @@
   .license-msg{margin-top:8px;font-size:13px;font-weight:500;} .license-msg.good{color:var(--good);} .license-msg.bad{color:var(--accent);}
   .toast{position:fixed;right:16px;bottom:16px;background:#1a1f2b;color:#e6f3ff;border:1px solid #2b3448;padding:10px 14px;border-radius:10px;box-shadow:0 6px 26px rgba(0,0,0,.35);opacity:0;transform:translateY(8px);transition:all .25s ease}
   .toast.show{opacity:1;transform:translateY(0)}
-  /* tooltip */
-  .help{display:inline-flex;align-items:center;gap:6px}
-  .help-icon{display:inline-block;width:18px;height:18px;border-radius:50%;background:#2a2e3e;color:#cbd5e1;font-weight:700;font-size:12px;line-height:18px;text-align:center;cursor:pointer;user-select:none}
-  .tooltip{position:absolute;background:#0f1118;border:1px solid #2a2e3e;color:#e6f3ff;padding:8px 10px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:12px;max-width:280px;z-index:20;display:none}
-  .tooltip.show{display:block}
 </style>
 </head>
 <body>
   <div class="container">
-    <h1>
-      Rivals Hero Overlay — Admin Queue
-      <span id="licenseStatus" class="status-pill bad">Unlicensed</span>
-    </h1>
+    <h1>Rivals Hero Overlay — Admin Queue <span id="licenseStatus" class="status-pill bad">Unlicensed</span></h1>
 
-    <!-- LICENSE -->
+    <!-- LICENSE CARD -->
     <div class="card" id="licenseCard">
       <div class="pill">License Activation</div>
-      <p class="muted" style="margin:8px 0 10px;">Enter your purchase key and channel ID to unlock all features.</p>
+      <p class="muted">Enter your purchase key and channel ID to unlock all features.</p>
       <div class="grid two">
         <div><label>Purchase Key</label><input id="licenseKey" type="text" placeholder="e.g., MYKEY123" /></div>
         <div><label>Channel ID</label><input id="licenseChannel" type="text" placeholder="e.g., Droopy" /></div>
@@ -70,22 +62,19 @@
     <!-- HERO PICKER SETUP -->
     <div class="card disabled" id="pickerSetupCard">
       <div class="pill">Hero Picker Setup</div>
-      <p class="muted" style="margin:10px 0 14px; line-height:1.5;">
-        Enter your <b>Streamlabs Donation Page username</b> and a <b>default tip amount</b>. This powers the public hero picker and must be completed before anything else.
-        <br/>Example: if your donation link is <code>https://streamlabs.com/droopy2/tip</code>, your username is <b>droopy2</b>.
-      </p>
+      <p class="muted" style="line-height:1.5;">Enter your <b>Streamlabs Donation Page username</b> and a <b>default tip amount</b>.<br/>Example: if your donation link is <code>https://streamlabs.com/droopy2/tip</code>, your username is <b>droopy2</b>.</p>
       <div class="grid two">
         <div><label>Streamlabs Donation Username</label><input id="slUser" type="text" placeholder="e.g., droopy2" /></div>
         <div><label>Default Tip Amount ($)</label><input id="slAmount" type="number" min="1" placeholder="e.g., 5" /></div>
       </div>
       <div class="row" style="margin-top:10px;">
-        <button class="btn teal" id="savePickerSetup">Save Hero Picker Setup</button>
+        <button class="btn teal" id="savePickerSetup">Save</button>
         <button class="btn secondary" id="clearPickerSetup">Clear</button>
         <span class="muted" id="pickerSavedMsg"></span>
       </div>
       <hr class="divider" />
       <div class="muted">
-        <div><b>Viewer Link</b> (share this with your chat after saving):</div>
+        <div><b>Viewer Link</b> (share this):</div>
         <div class="row" style="margin-top:6px;">
           <code id="viewerLink">— not generated yet —</code>
           <button class="btn secondary" id="copyViewer">Copy</button>
@@ -93,54 +82,7 @@
       </div>
     </div>
 
-    <!-- SETUP -->
-    <div class="card disabled" id="mainSetupCard">
-      <div class="flex-between">
-        <div class="pill">Setup</div>
-        <button class="btn secondary" id="toggleSetup">Collapse</button>
-      </div>
-      <div id="setupBody" style="margin-top:12px;">
-        <p class="muted" style="margin:0 0 8px;">
-          Enter your <b>Channel ID</b> (usually your Streamlabs/Twitch username). Optional: paste your
-          <span class="help">
-            <b>Streamlabs Socket Token</b>
-            <span class="help-icon" id="tokenHelpIcon">?</span>
-          </span>
-          to auto-queue from donations.
-        </p>
-        <div class="grid two">
-          <div><label>Channel ID</label><input id="channelId" type="text" placeholder="e.g., Droopy" /></div>
-          <div style="position:relative;">
-            <label>Streamlabs Socket Token (optional)</label>
-            <input id="slToken" type="password" placeholder="Paste token for auto-queue on donations" />
-            <div class="tooltip" id="tokenTooltip">
-              <div style="font-weight:700;margin-bottom:4px;">Where to find this</div>
-              1) Open Streamlabs → Settings → API Settings<br/>
-              2) Scroll to <i>Socket API Token</i> → <b>Show Token</b><br/>
-              3) Copy and paste it here, then click <b>Connect Streamlabs</b>.<br/><br/>
-              Keep this page open during your stream to auto-queue requests.
-            </div>
-            <div class="muted">Leave blank if you’ll add heroes manually.</div>
-          </div>
-        </div>
-        <div class="row" style="margin-top:10px;">
-          <button class="btn" id="saveSetup">Save Setup</button>
-          <button class="btn secondary" id="connectSL">Connect Streamlabs</button>
-          <span id="setupStatus" class="muted"></span>
-        </div>
-        <hr class="divider" />
-        <div class="muted">
-          <div>Use this URL in an OBS Browser Source (your overlay):</div>
-          <div class="row" style="margin-top:6px;">
-            <code id="overlayUrl">https://droopy1943.github.io/Hero-picker/overlay.html?channel=demo</code>
-            <button class="btn secondary" id="copyOverlay">Copy</button>
-            <a class="btn secondary" id="openOverlay" href="#" target="_blank" rel="noopener">Open Overlay</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- QUEUE -->
+    <!-- QUEUE SECTION -->
     <div class="card disabled" id="queueCard">
       <div class="flex-between">
         <div class="pill">Queue</div>
@@ -152,8 +94,18 @@
       <div class="row" style="margin-top:12px;">
         <div>
           <label>Hero name</label>
-          <!-- CHANGED: input+datalist -> select -->
-          <select id="manualHero"><option value="">Select a hero...</option></select>
+          <select id="manualHero">
+            <option value="">Select a hero...</option>
+            <option>Adam Warlock</option><option>Angela</option><option>Black Panther</option><option>Black Widow</option><option>Blade</option>
+            <option>Captain America</option><option>Cloak & Dagger</option><option>Doctor Strange</option><option>Emma Frost</option><option>Groot</option>
+            <option>Hawkeye</option><option>Hela</option><option>Hulk</option><option>Human Torch</option><option>Invisible Woman</option>
+            <option>Iron Fist</option><option>Iron Man</option><option>Jeff the Land Shark</option><option>Loki</option><option>Luna Snow</option>
+            <option>Magik</option><option>Magneto</option><option>Mantis</option><option>Mister Fantastic</option><option>Moon Knight</option>
+            <option>Namor</option><option>Peni Parker</option><option>Phoenix</option><option>Psylocke</option><option>The Punisher</option>
+            <option>The Thing</option><option>Rocket Raccoon</option><option>Scarlet Witch</option><option>Squirrel Girl</option>
+            <option>Spider-Man</option><option>Star-Lord</option><option>Storm</option><option>Thor</option><option>Ultron</option>
+            <option>Venom</option><option>Winter Soldier</option><option>Wolverine</option>
+          </select>
         </div>
         <div>
           <label>Donor name (optional)</label>
@@ -168,257 +120,18 @@
 
     <!-- STATUS -->
     <div class="card disabled" id="statusCard">
-      <div class="flex-between">
-        <div class="pill">Status</div>
-        <div id="liveStatus" class="pill">Not connected</div>
-      </div>
+      <div class="flex-between"><div class="pill">Status</div><div id="liveStatus" class="pill">Not connected</div></div>
       <p id="log" class="muted" style="margin:10px 0 0;"></p>
-      <div id="debugPanel" class="muted hidden" style="margin-top:10px;">
-        <div class="row">
-          <button class="btn secondary" id="dbgRefresh">Force Refresh Queue</button>
-          <button class="btn secondary" id="dbgClearLS">Clear Local Storage</button>
-          <span id="dbgInfo"></span>
-        </div>
-      </div>
     </div>
   </div>
 
   <div class="watermark">
-    <a href="https://twitch.tv/droopy" target="_blank" rel="noopener"><span>Created by: <strong>Droopy</strong></span><span class="twitch-dot" title="Twitch"></span></a>
-    <div>v1.5.1</div>
+    <a href="https://twitch.tv/droopy" target="_blank"><span>Created by: <strong>Droopy</strong></span><span class="twitch-dot"></span></a>
+    <div>v1.5.2</div>
   </div>
 
   <div class="toast" id="toast">Saved</div>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-
- <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-import { getDatabase, ref, onValue, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
-  authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
-  databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
-  projectId: "marvel-rivals-overlay-7f867",
-  storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
-  messagingSenderId: "1078364810175",
-  appId: "1:1078364810175:web:fac410007b70b65e348f0a"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
-await signInAnonymously(auth);
-
-const $ = (id) => document.getElementById(id);
-const toast = $("toast");
-function showToast(msg) {
-  toast.textContent = msg;
-  toast.classList.add("show");
-  setTimeout(() => toast.classList.remove("show"), 1500);
-}
-
-// ---- Helper: Escape HTML ----
-function escapeHTML(str) {
-  return (str || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-// === ELEMENTS ===
-const manualHero = $("manualHero");
-const manualDonor = $("manualDonor");
-const addManualBtn = $("addManual");
-const nextHeroBtn = $("nextHero");
-const clearQueueBtn = $("clearQueue");
-const queueList = $("queueList");
-const licenseKeyInput = $("licenseKey");
-const licenseChannelInput = $("licenseChannel");
-
-// === LICENSE ===
-async function verifyLicense() {
-  const key = licenseKeyInput.value.trim();
-  const ch = licenseChannelInput.value.trim();
-  if (!key || !ch) return alert("Please enter both fields.");
-
-  const snap = await get(ref(db, `/channels/${ch}/licenses/${key}`));
-  const val = snap.val();
-  if (val && val.active === true) {
-    localStorage.setItem("mr_license", JSON.stringify({ key, channel: ch }));
-    showToast("✅ License verified");
-    document.querySelectorAll(".card.disabled").forEach((c) => c.classList.remove("disabled"));
-    watchQueue(ch);
-    ensurePlaceholderCurrent(ch);
-  } else {
-    alert("❌ Invalid or inactive key.");
-  }
-}
-$("verifyLicense").onclick = verifyLicense;
-
-// === HERO DROPDOWN ===
-(async () => {
-  try {
-    const res = await fetch("./herolist.json", { cache: "no-store" });
-    const list = await res.json();
-    const names = Array.isArray(list)
-      ? list
-      : Array.isArray(list?.heroes)
-      ? list.heroes
-      : [];
-    const items = names.length
-      ? names
-      : [
-          "Adam Warlock",
-          "Angela",
-          "Black Panther",
-          "Black Widow",
-          "Blade",
-          "Captain America",
-          "Cloak & Dagger",
-          "Doctor Strange",
-          "Emma Frost",
-          "Groot",
-          "Hawkeye",
-          "Hela",
-          "Hulk",
-          "Human Torch",
-          "Invisible Woman",
-          "Iron Fist",
-          "Iron Man",
-          "Jeff the Land Shark",
-          "Loki",
-          "Luna Snow",
-          "Magik",
-          "Magneto",
-          "Mantis",
-          "Mister Fantastic",
-          "Moon Knight",
-          "Namor",
-          "Peni Parker",
-          "Phoenix",
-          "Psylocke",
-          "The Punisher",
-          "The Thing",
-          "Rocket Raccoon",
-          "Scarlet Witch",
-          "Squirrel Girl",
-          "Spider-Man",
-          "Star-Lord",
-          "Storm",
-          "Thor",
-          "Ultron",
-          "Venom",
-          "Winter Soldier",
-          "Wolverine",
-        ];
-    manualHero.innerHTML =
-      `<option value="">Select a hero...</option>` +
-      items
-        .map(
-          (h) =>
-            `<option value="${escapeHTML(h)}">${escapeHTML(h)}</option>`
-        )
-        .join("");
-  } catch (err) {
-    console.error("Hero list load failed", err);
-  }
-})();
-
-// === QUEUE FUNCTIONS ===
-function renderQueue(items) {
-  queueList.innerHTML = "";
-  items.forEach((it, i) => {
-    const li = document.createElement("li");
-    li.innerHTML = `<div>#${i + 1} — <strong>${escapeHTML(
-      it.hero || ""
-    )}</strong> ${
-      it.donor
-        ? `<span class="muted">by ${escapeHTML(it.donor)}</span>`
-        : ""
-    }</div>`;
-    queueList.appendChild(li);
-  });
-}
-
-function watchQueue(channel) {
-  const qRef = ref(db, `/channels/${channel}/queue`);
-  onValue(qRef, (snap) => {
-    const val = snap.val() || {};
-    const items = Object.values(val);
-    renderQueue(items);
-  });
-}
-
-async function ensurePlaceholderCurrent(channelId) {
-  try {
-    const cSnap = await get(ref(db, `/channels/${channelId}/current`));
-    const cur = cSnap.val();
-    if (!cur || !cur.hero || cur.hero === "") {
-      await set(ref(db, `/channels/${channelId}/current`), {
-        hero: "Pick a Hero",
-        donor: "",
-        amount: "",
-      });
-    }
-  } catch {}
-}
-
-addManualBtn.onclick = async () => {
-  const hero = manualHero.value;
-  const donor = manualDonor.value.trim();
-  const lic = JSON.parse(localStorage.getItem("mr_license") || "{}");
-  if (!lic.channel) return alert("You must verify your license first!");
-  if (!hero) return alert("Please select a hero!");
-
-  await push(ref(db, `/channels/${lic.channel}/queue`), {
-    hero,
-    donor: donor || null,
-    amount: null,
-    ts: Date.now(),
-  });
-  showToast(`Added ${hero}${donor ? ` by ${donor}` : ""}`);
-  manualHero.value = "";
-  manualDonor.value = "";
-};
-
-nextHeroBtn.onclick = async () => {
-  const lic = JSON.parse(localStorage.getItem("mr_license") || "{}");
-  const ch = lic.channel;
-  if (!ch) return alert("License required.");
-
-  const snap = await get(ref(db, `/channels/${ch}/queue`));
-  const obj = snap.val();
-  if (!obj) return alert("Queue empty.");
-
-  const entries = Object.entries(obj).map(([k, v]) => ({ k, v }));
-  entries.sort((a, b) => (a.v.ts || 0) - (b.v.ts || 0));
-  const first = entries[0];
-  if (!first) return;
-
-  await set(ref(db, `/channels/${ch}/current`), first.v);
-  await remove(ref(db, `/channels/${ch}/queue/${first.k}`));
-  showToast(`Now showing ${first.v.hero}`);
-};
-
-clearQueueBtn.onclick = async () => {
-  const lic = JSON.parse(localStorage.getItem("mr_license") || "{}");
-  const ch = lic.channel;
-  if (!ch) return alert("License required.");
-  if (!confirm("Clear all items from the queue?")) return;
-
-  await remove(ref(db, `/channels/${ch}/queue`));
-  await set(ref(db, `/channels/${ch}/current`), {
-    hero: "Pick a Hero",
-    donor: "",
-    amount: "",
-  });
-  showToast("Queue cleared and overlay reset.");
-};
-</script>
-
+  <script type="module" src="./queue.js"></script>
 </body>
 </html>
