@@ -53,13 +53,15 @@
       width: 100%;
       height: 100px;
       object-fit: cover;
+      border-bottom: 1px solid #ff4655;
     }
 
-    .hero-tile p {
-      margin: 5px 0;
+    .hero-name {
+      margin: 8px 0;
       font-size: 0.9em;
       font-weight: 600;
       color: #fff;
+      text-transform: capitalize;
     }
 
     /* --- DROOPY WATERMARK --- */
@@ -131,14 +133,30 @@
     heroes.forEach(hero => {
       const tile = document.createElement("div");
       tile.className = "hero-tile";
-      tile.innerHTML = `
-        <img src="images/${hero.replace(/ /g, '').replace(/&/g, '').toLowerCase()}.png" alt="${hero}">
-        <p>${hero}</p>
-      `;
+
+      const img = document.createElement("img");
+      const heroFile = `images/${hero}.png`;
+
+      img.src = heroFile;
+      img.alt = hero;
+
+      img.onerror = () => {
+        const altFile = `images/${hero.replace(/ /g, '').toLowerCase()}.png`;
+        img.src = altFile;
+      };
+
+      const label = document.createElement("div");
+      label.className = "hero-name";
+      label.textContent = hero;
+
+      tile.appendChild(img);
+      tile.appendChild(label);
+
       tile.onclick = () => {
         const link = `https://streamlabs.com/CHANNEL_NAME/tip?amount=5&message=I%20want%20to%20request%20${encodeURIComponent(hero)}`;
         window.open(link, "_blank");
       };
+
       heroGrid.appendChild(tile);
     });
   </script>
