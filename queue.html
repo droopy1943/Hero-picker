@@ -15,10 +15,8 @@
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 4px 24px rgba(0,0,0,.25)}
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   label{display:block;font-size:14px;color:var(--muted);margin-bottom:6px}
-  input[type="text"],input[type="password"],input[type="number"],select{
-    width:360px;max-width:100%;background:#0f1118;color:var(--text);
-    border:1px solid #2a2e3e;border-radius:8px;padding:10px 12px;outline:none
-  }
+  input[type="text"],input[type="password"],input[type="number"],select{ width:360px;max-width:100%;background:#0f1118;color:var(--text);border:1px solid #2a2e3e;border-radius:8px;padding:10px 12px;outline:none }
+  select option{background:#0f1118;color:var(--text);}
   code{background:#0f1118;border:1px solid #2a2e3e;padding:6px 8px;border-radius:8px}
   .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600;letter-spacing:.2px}
   .btn.secondary{background:#2a2e3e} .btn.good{background:var(--good)} .btn.warn{background:var(--warn);color:#1a1000} .btn.teal{background:#139e8a}
@@ -45,7 +43,10 @@
 </head>
 <body>
   <div class="container">
-    <h1>Rivals Hero Overlay — Admin Queue <span id="licenseStatus" class="status-pill bad">Unlicensed</span></h1>
+    <h1>
+      Rivals Hero Overlay — Admin Queue
+      <span id="licenseStatus" class="status-pill bad">Unlicensed</span>
+    </h1>
 
     <!-- LICENSE -->
     <div class="card" id="licenseCard">
@@ -71,13 +72,10 @@
           <button class="btn warn" id="clearQueue">Clear Queue</button>
         </div>
       </div>
-
       <div class="row" style="margin-top:12px;">
         <div>
           <label>Hero name</label>
-          <select id="manualHero">
-            <option value="">Select a hero...</option>
-          </select>
+          <select id="manualHero"><option value="">Select a hero...</option></select>
         </div>
         <div>
           <label>Donor name (optional)</label>
@@ -87,7 +85,6 @@
           <button class="btn" id="addManual">Add to Queue</button>
         </div>
       </div>
-
       <ul id="queueList"></ul>
     </div>
 
@@ -102,63 +99,32 @@
   </div>
 
   <div class="watermark">
-    <a href="https://twitch.tv/droopy" target="_blank"><span>Created by: <strong>Droopy</strong></span><span class="twitch-dot" title="Twitch"></span></a>
+    <a href="https://twitch.tv/droopy" target="_blank" rel="noopener"><span>Created by: <strong>Droopy</strong></span><span class="twitch-dot" title="Twitch"></span></a>
     <div>v1.5.1</div>
   </div>
 
   <div class="toast" id="toast">Saved</div>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, get, push, set, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { getDatabase, ref, onValue, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
-    const firebaseConfig = {
-      apiKey:"AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
-      authDomain:"marvel-rivals-overlay-7f867.firebaseapp.com",
-      databaseURL:"https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
-      projectId:"marvel-rivals-overlay-7f867",
-      storageBucket:"marvel-rivals-overlay-7f867.appspot.com",
-      messagingSenderId:"1078364810175",
-      appId:"1:1078364810175:web:fac410007b70b65e348f0a"
-    };
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
+    const firebaseConfig = { apiKey:"AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE", authDomain:"marvel-rivals-overlay-7f867.firebaseapp.com", databaseURL:"https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com", projectId:"marvel-rivals-overlay-7f867", storageBucket:"marvel-rivals-overlay-7f867.appspot.com", messagingSenderId:"1078364810175", appId:"1:1078364810175:web:fac410007b70b65e348f0a" };
+    const app = initializeApp(firebaseConfig); 
+    const db  = getDatabase(app); 
+    const auth = getAuth(app); 
     await signInAnonymously(auth);
 
-    const $ = id => document.getElementById(id);
-    const heroSelect = $("manualHero");
-    const queueList = $("queueList");
+    const $=id=>document.getElementById(id); 
+    const manualHero=$("manualHero");
+    const heroesList=[
+      "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America","Cloak & Dagger","Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk","Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark","Loki","Luna Snow","Magik","Magneto","Mantis","Mister Fantastic","Moon Knight","Namor","Peni Parker","Phoenix","Psylocke","The Punisher","The Thing","Rocket Raccoon","Scarlet Witch","Squirrel Girl","Spider-Man","Star-Lord","Storm","Thor","Ultron","Venom","Winter Soldier","Wolverine"
+    ];
+    manualHero.innerHTML = `<option value="">Select a hero...</option>` + heroesList.map(h=>`<option value="${h}">${h}</option>`).join("");
 
-    // Load hero list dynamically
-    async function loadHeroes(){
-      try {
-        const res = await fetch("./herolist.json",{cache:"no-store"});
-        const list = await res.json();
-        const heroes = Array.isArray(list) ? list : (list?.heroes || []);
-        heroSelect.innerHTML = '<option value="">Select a hero...</option>' + heroes.map(h=>`<option>${h}</option>`).join("");
-      } catch {
-        const fallback = ["Blade","Iron Man","Hulk","Thor","Spider-Man"];
-        heroSelect.innerHTML = '<option value="">Select a hero...</option>' + fallback.map(h=>`<option>${h}</option>`).join("");
-      }
-    }
-    await loadHeroes();
-
-    // Example push
-    $("addManual").onclick = async ()=>{
-      const hero = heroSelect.value;
-      const donor = $("manualDonor").value.trim();
-      if(!hero) return alert("Please select a hero first.");
-      await push(ref(db,"/channels/demo/queue"),{hero,donor,ts:Date.now()});
-      alert(`✅ Added ${hero}${donor?` by ${donor}`:""} to queue!`);
-    };
-
-    // Simple display update
-    onValue(ref(db,"/channels/demo/queue"),(snap)=>{
-      const val = snap.val()||{};
-      queueList.innerHTML = Object.values(val).map(v=>`<li><strong>${v.hero}</strong>${v.donor?` <span class='muted'>by ${v.donor}</span>`:""}</li>`).join("");
-    });
+    function log(msg){$("log").textContent=`[${new Date().toLocaleTimeString()}] ${msg}\n`+($("log").textContent||"");}
   </script>
 </body>
 </html>
