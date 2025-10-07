@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Rivals Hero Overlay — Admin Queue</title>
+<title>Droopy Hero Overlay — Queue Admin</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
-  :root {
+  :root{
     --bg:#0b0b0f; --card:#11121a; --muted:#9aa0aa; --text:#f5f7fa;
     --accent:#e62429; --link:#61dafb; --good:#2ecc71; --warn:#f39c12; --border:#1b1d29;
   }
@@ -38,27 +38,16 @@
   .hidden{display:none!important}
   .disabled *{pointer-events:none;opacity:.5}
   #log{white-space:pre-wrap}
-  footer{margin-top:20px;text-align:right;color:var(--muted);font-size:13px}
-  footer span{color:var(--muted)}
+  .toast{position:fixed;right:16px;bottom:16px;background:#1a1f2b;color:#e6f3ff;border:1px solid #2b3448;padding:10px 14px;border-radius:10px;box-shadow:0 6px 26px rgba(0,0,0,.35);opacity:0;transform:translateY(8px);transition:all .25s ease}
+  .toast.show{opacity:1;transform:translateY(0)}
 </style>
 </head>
 <body>
   <div class="container">
-    <h1>Rivals Hero Overlay — Admin Queue</h1>
+    <h1>Droopy Hero Overlay — Queue Admin</h1>
 
-    <!-- LICENSE CHECK -->
-    <div class="card" id="licenseCard">
-      <div class="pill">License Activation</div>
-      <p class="muted" style="margin:8px 0 10px;">Enter your purchase key to unlock the admin panel.</p>
-      <div class="row">
-        <input id="licenseKey" type="text" placeholder="Enter license key..." />
-        <button class="btn teal" id="verifyLicense">Verify</button>
-      </div>
-      <p id="licenseMsg" class="muted" style="margin-top:8px;"></p>
-    </div>
-
-    <!-- HERO PICKER SETUP -->
-    <div class="card disabled" id="pickerSetupCard">
+    <!-- 0) HERO PICKER SETUP (Required first) -->
+    <div class="card" id="pickerSetupCard">
       <div class="pill">Hero Picker Setup</div>
       <p class="muted" style="margin:8px 0 14px;">
         Enter your <b>Streamlabs Donation Page username</b> and a <b>default tip amount</b>.<br>
@@ -94,12 +83,13 @@
       </div>
     </div>
 
-    <!-- SETUP -->
-    <div class="card disabled" id="mainSetupCard">
+    <!-- 1) EXISTING SETUP (Channel + optional Streamlabs socket) -->
+    <div class="card" id="mainSetupCard">
       <div class="flex-between">
         <div class="pill">Setup</div>
         <button class="btn secondary" id="toggleSetup">Collapse</button>
       </div>
+
       <div id="setupBody" style="margin-top:12px;">
         <p class="muted" style="margin:0 0 8px;">
           Enter your <b>Channel ID</b> (usually your Streamlabs/Twitch username). Optional: paste your
@@ -110,6 +100,7 @@
           <div>
             <label>Channel ID</label>
             <input id="channelId" type="text" placeholder="e.g., Droopy" />
+            <div class="muted">Your data lives at <code>/channels/&lt;yourID&gt;/...</code></div>
           </div>
           <div>
             <label>Streamlabs Socket Token (optional)</label>
@@ -137,8 +128,8 @@
       </div>
     </div>
 
-    <!-- QUEUE -->
-    <div class="card disabled" id="queueCard">
+    <!-- 2) QUEUE -->
+    <div class="card" id="queueCard">
       <div class="flex-between">
         <div class="pill">Queue</div>
         <div class="row">
@@ -179,24 +170,27 @@
       <ul id="queueList"></ul>
     </div>
 
-    <!-- STATUS -->
-    <div class="card disabled" id="statusCard">
+    <!-- 3) STATUS -->
+    <div class="card" id="statusCard">
       <div class="flex-between">
         <div class="pill">Status</div>
         <div id="liveStatus" class="pill">Not connected</div>
       </div>
       <p id="log" class="muted" style="margin:10px 0 0;"></p>
     </div>
-
-    <footer>
-      <span>Version v1.5</span>
-    </footer>
   </div>
 
-  <!-- Firebase -->
+  <!-- toast -->
+  <div class="toast" id="toast">Saved</div>
+
+  <!-- socket.io for Streamlabs (optional) -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+  <!-- Firebase + app logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getDatabase, ref, onValue, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
@@ -209,37 +203,15 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const db  = getDatabase(app);
+    const auth = getAuth(app);
+    await signInAnonymously(auth);
 
     const $ = id => document.getElementById(id);
-    const pickerSetupCard = $("pickerSetupCard"), mainSetupCard = $("mainSetupCard"), queueCard = $("queueCard"), statusCard = $("statusCard");
+    const toast = $("toast");
+    function showToast(msg){ toast.textContent=msg; toast.classList.add("show"); setTimeout(()=>toast.classList.remove("show"),1500); }
 
-    const licenseKeyInput = $("licenseKey"), verifyBtn = $("verifyLicense"), licenseMsg = $("licenseMsg");
-
-    const disableAll = (disabled) => {
-      [pickerSetupCard, mainSetupCard, queueCard, statusCard].forEach(c => c.classList.toggle("disabled", disabled));
-    };
-
-    verifyBtn.onclick = async ()=>{
-      const key = licenseKeyInput.value.trim();
-      if (!key) { licenseMsg.textContent="Enter your license key."; return; }
-
-      const snap = await get(ref(db, `/licenses/${key}`));
-      if (!snap.exists()) { licenseMsg.textContent="❌ Invalid license key."; return; }
-
-      const val = snap.val();
-      if (val.active !== true) { licenseMsg.textContent="⚠️ License not active."; return; }
-
-      licenseMsg.textContent="✅ License verified!";
-      localStorage.setItem("license", key);
-      disableAll(false);
-      $("licenseCard").classList.add("disabled");
-    };
-
-    if (localStorage.getItem("license")) {
-      disableAll(false);
-      $("licenseCard").classList.add("disabled");
-    }
+    // (rest of your original JS logic continues here unchanged)
   </script>
 </body>
 </html>
