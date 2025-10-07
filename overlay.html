@@ -70,157 +70,84 @@
   </div>
 
   <script>
-    // Hero name to file map
     const characters = {
-  "Adam Warlock": "Adam Warlock.png",
-  "Angela": "Angela.png",
-  "Black Panther": "Black Panther.png",
-  "Black Widow": "Black Widow.png",
-  "Blade": "Blade.png",
-  "Captain America": "Captain America.png",
-  "Cloak & Dagger": "Cloak & Dagger.png",
-  "Doctor Strange": "Doctor Strange.png",
-  "Emma Frost": "Emma Frost.png",
-  "Groot": "Groot.png",
-  "Hawkeye": "Hawkeye.png",
-  "Hela": "Hela.png",
-  "Hulk": "Hulk.png",
-  "Human Torch": "Human Torch.png",
-  "Invisible Woman": "Invisible Woman.png",
-  "Iron Fist": "Iron Fist.png",
-  "Iron Man": "Iron Man.png",
-  "Jeff the Land Shark": "Jeff the Land Shark.png",
-  "Loki": "Loki.png",
-  "Luna Snow": "Luna Snow.png",
-  "Magik": "Magik.png",
-  "Magneto": "Magneto.png",
-  "Mantis": "Mantis.png",
-  "Mister Fantastic": "Mister Fantastic.png",
-  "Moon Knight": "Moon Knight.png",
-  "Namor": "Namor.png",
-  "Peni Parker": "Peni Parker.png",
-  "Phoenix": "Phoenix.png",
-  "Psylocke": "Psylocke.png",
-  "The Punisher": "The Punisher.png",
-  "The Thing": "The Thing.png",
-  "Rocket Raccoon": "Rocket Raccoon.png",
-  "Scarlet Witch": "Scarlet Witch.png",
-  "Squirrel Girl": "Squirrel Girl.png",
-  "Spider-Man": "Spider-Man.png",
-  "Star-Lord": "Star-Lord.png",
-  "Storm": "Storm.png",
-  "Thor": "Thor.png",
-  "Ultron": "Ultron.png",
-  "Venom": "Venom.png",
-  "Winter Soldier": "Winter Soldier.png",
-  "Wolverine": "Wolverine.png"
-};
+      "Adam Warlock": "Adam Warlock.png",
+      "Angela": "Angela.png",
+      "Black Panther": "Black Panther.png",
+      "Black Widow": "Black Widow.png",
+      "Blade": "Blade.png",
+      "Captain America": "Captain America.png",
+      "Cloak & Dagger": "Cloak & Dagger.png",
+      "Doctor Strange": "Doctor Strange.png",
+      "Emma Frost": "Emma Frost.png",
+      "Groot": "Groot.png",
+      "Hawkeye": "Hawkeye.png",
+      "Hela": "Hela.png",
+      "Hulk": "Hulk.png",
+      "Human Torch": "Human Torch.png",
+      "Invisible Woman": "Invisible Woman.png",
+      "Iron Fist": "Iron Fist.png",
+      "Iron Man": "Iron Man.png",
+      "Jeff the Land Shark": "Jeff the Land Shark.png",
+      "Loki": "Loki.png",
+      "Luna Snow": "Luna Snow.png",
+      "Magik": "Magik.png",
+      "Magneto": "Magneto.png",
+      "Mantis": "Mantis.png",
+      "Mister Fantastic": "Mister Fantastic.png",
+      "Moon Knight": "Moon Knight.png",
+      "Namor": "Namor.png",
+      "Peni Parker": "Peni Parker.png",
+      "Phoenix": "Phoenix.png",
+      "Psylocke": "Psylocke.png",
+      "The Punisher": "The Punisher.png",
+      "The Thing": "The Thing.png",
+      "Rocket Raccoon": "Rocket Raccoon.png",
+      "Scarlet Witch": "Scarlet Witch.png",
+      "Squirrel Girl": "Squirrel Girl.png",
+      "Spider-Man": "Spider-Man.png",
+      "Star-Lord": "Star-Lord.png",
+      "Storm": "Storm.png",
+      "Thor": "Thor.png",
+      "Ultron": "Ultron.png",
+      "Venom": "Venom.png",
+      "Winter Soldier": "Winter Soldier.png",
+      "Wolverine": "Wolverine.png",
+      "Pick a Hero": "pickahero.png" /* 🧩 fallback image */
+    };
 
     const charImgEl = document.getElementById("charImg");
     const donorTextEl = document.getElementById("donorText");
-// Common nicknames / aliases mapping
-const aliases = {
-  "cap": "Captain America",
-  "captain": "Captain America",
-  "ironman": "Iron Man",
-  "tony": "Iron Man",
-  "stark": "Iron Man",
-  "spidey": "Spider-Man",
-  "spiderman": "Spider-Man",
-  "peter": "Spider-Man",
-  "logan": "Wolverine",
-  "wolv": "Wolverine",
-  "punisher": "The Punisher",
-  "frank": "The Punisher",
-  "bucky": "Winter Soldier",
-  "soldier": "Winter Soldier",
-  "nat": "Black Widow",
-  "widow": "Black Widow",
-  "hulk": "Hulk",
-  "bruce": "Hulk",
-  "doc": "Doctor Strange",
-  "drstrange": "Doctor Strange",
-  "mag": "Magneto",
-  "star": "Star-Lord",
-  "starlord": "Star-Lord"
-};
 
     function newDonation(heroName, donorName = "") {
-  if (!heroName) return;
+      if (!heroName) return;
 
-  // Normalize hero names: lowercase, strip spaces, hyphens, and punctuation
-  const normalize = str => str.toLowerCase().replace(/[\s\-\._]/g, "");
+      const fileName = characters[heroName] || `${heroName}.png`;
 
-  let normalizedHero = normalize(heroName);
+      console.log("Trying:", `images/${fileName}`);
+      charImgEl.onerror = () => {
+        console.warn(`Could not load image for "${heroName}"`);
+      };
 
-  // Check aliases first
-  if (aliases[normalizedHero]) {
-    normalizedHero = normalize(aliases[normalizedHero]);
-  }
-
-  const heroKey = Object.keys(characters).find(
-    key => normalize(key) === normalizedHero
-  );
-
-
-  if (heroKey) {
-  let fileName = characters[heroKey];
-
-  // Create a bunch of safe fallback variations to test
-  const variants = [
-  `images/${fileName}`,
-  `images/${fileName.charAt(0).toUpperCase() + fileName.slice(1)}`,
-  `images/${fileName.toLowerCase()}`,
-  `images/${fileName.replace(/_/g, ' ')}`,   // if original uses underscores
-  `images/${fileName.replace(/ /g, '_')}`,   // if original uses spaces
-  `images/${fileName.replace(/ /g, '')}`,    // remove spaces entirely
-  `images/${fileName.replace(/_/g, '')}`,    // remove underscores entirely
-  `images/${fileName.replace(/\.png$/i, '.PNG')}` // uppercase .PNG extension
-];
-
-
-  const tryNext = (index = 0) => {
-    if (index >= variants.length) {
-      console.warn(`❌ Could not load image for "${heroName}"`);
-      charImgEl.style.display = "none";
-      return;
-    }
-
-    const src = variants[index];
-    console.log(`Trying: ${src}`);
-    charImgEl.src = src;
-
-    charImgEl.onload = () => {
+      charImgEl.src = `images/${fileName}`;
       charImgEl.style.display = "block";
-      donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
-      console.log(`✅ Loaded: ${src}`);
-    };
-
-    charImgEl.onerror = () => {
-      console.warn(`Failed: ${src}, trying next...`);
-      tryNext(index + 1);
-    };
-  };
-
-  tryNext();
-} else {
-  console.log("Hero not found:", heroName);
-  charImgEl.style.display = "none";
-  donorTextEl.textContent = "";
-}
-
-}
+      donorTextEl.textContent =
+        heroName === "Pick a Hero"
+          ? ""
+          : donorName
+          ? `Requested by ${donorName}`
+          : "";
+    }
 
     window.newDonation = newDonation;
   </script>
 
-  <!-- Firebase listener -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",  /* ← paste your real key */
+      apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
       authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
       databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
       projectId: "marvel-rivals-overlay-7f867",
@@ -235,9 +162,6 @@ const aliases = {
     const params = new URLSearchParams(location.search);
     const channelId = params.get("channel") || "demo";
 
-    const charImgEl = document.getElementById("charImg");
-    const donorTextEl = document.getElementById("donorText");
-
     onValue(ref(db, `/channels/${channelId}/current`), (snap) => {
       const cur = snap.val();
       if (!cur || !cur.hero) return;
@@ -246,13 +170,5 @@ const aliases = {
       newDonation(cur.hero.trim(), cur.donor);
     });
   </script>
-  <script>
-  // Temporary testing helper — lets you manually trigger heroes
-  window.testHero = function(heroName) {
-    console.log("Testing hero:", heroName);
-    newDonation(heroName, "Test");
-  };
-</script>
-
 </body>
 </html>
