@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Droopy Hero Picker</title>
   <style>
     body {
@@ -19,6 +19,11 @@
       margin-bottom: 10px;
     }
 
+    p {
+      color: #aaa;
+      margin-bottom: 20px;
+    }
+
     #heroGrid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -28,7 +33,7 @@
 
     .hero-card {
       background-color: #1a1a1a;
-      border: 2px solid #c0392b;
+      border: 2px solid #e62429;
       border-radius: 10px;
       padding: 10px;
       transition: transform 0.2s, box-shadow 0.2s;
@@ -37,7 +42,7 @@
 
     .hero-card:hover {
       transform: scale(1.05);
-      box-shadow: 0 0 10px #ff4757;
+      box-shadow: 0 0 10px #e62429;
     }
 
     .hero-card img {
@@ -59,7 +64,7 @@
     }
 
     footer a {
-      color: #7289da;
+      color: #9146ff;
       text-decoration: none;
     }
 
@@ -80,7 +85,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
@@ -108,32 +113,49 @@
     const heroGrid = document.getElementById("heroGrid");
     const params = new URLSearchParams(location.search);
     const channelId = params.get("channel") || "demo";
-    const amount = params.get("amount") || 5;
 
-    heroes.forEach(hero => {
-      const card = document.createElement("div");
-      card.classList.add("hero-card");
+    // Function to load channel settings from Firebase
+    async function loadSettings() {
+      try {
+        const settingsRef = ref(db, `/channels/${channelId}/settings`);
+        const snap = await get(settingsRef);
+        const data = snap.val();
+        const streamlabsUser = data?.streamlabsUser || "droopy2";
+        const defaultAmount = data?.defaultAmount || "5";
+        renderHeroes(streamlabsUser, defaultAmount);
+      } catch (e) {
+        console.error("Failed to load settings", e);
+        renderHeroes("droopy2", "5");
+      }
+    }
 
-      const img = document.createElement("img");
-      // ✅ Use URL encoding to support & and spaces in filenames
-      img.src = `images/${encodeURIComponent(hero)}.png`;
-      img.alt = hero;
+    function renderHeroes(streamlabsUser, defaultAmount) {
+      heroes.forEach(hero => {
+        const card = document.createElement("div");
+        card.classList.add("hero-card");
 
-      const name = document.createElement("div");
-      name.classList.add("hero-name");
-      name.textContent = hero;
+        const img = document.createElement("img");
+        img.src = `images/${encodeURIComponent(hero)}.png`;
+        img.alt = hero;
 
-      card.appendChild(img);
-      card.appendChild(name);
+        const name = document.createElement("div");
+        name.classList.add("hero-name");
+        name.textContent = hero;
 
-      card.onclick = () => {
-        const message = encodeURIComponent(`I want to request ${hero}`);
-        const url = `https://droopy.tv/tip?amount=${amount}&message=${message}&channel=${channelId}`;
-        window.open(url, "_blank");
-      };
+        card.appendChild(img);
+        card.appendChild(name);
 
-      heroGrid.appendChild(card);
-    });
+        card.onclick = () => {
+          const message = encodeURIComponent(`I want to request [${hero}]`);
+          const url = `https://streamlabs.com/${streamlabsUser}/tip?amount=${defaultAmount}&message=${message}`;
+          window.open(url, "_blank");
+        };
+
+        heroGrid.appendChild(card);
+      });
+    }
+
+    loadSettings();
   </script>
 </body>
 </html>
