@@ -1,1 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rivals License Key Generator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{ --bg:#0b0b0f; --card:#11121a; --muted:#9aa0aa; --text:#f5f7fa; --accent:#e62429; --border:#1b1d29; --good:#2ecc71; --warn:#f39c12; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  .container{max-width:920px;margin:32px auto;padding:0 16px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 4px 24px rgba(0,0,0,.25)}
+  h1{margin:0 0 12px;font-size:26px;letter-spacing:.3px}
+  label{display:block;font-size:14px;color:var(--muted);margin-bottom:6px}
+  input[type="text"], input[type="password"]{ width:360px;max-width:100%;background:#0f1118;color:var(--text);border:1px solid #2a2e3e;border-radius:8px;padding:10px 12px;outline:none }
+  .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600;letter-spacing:.2px}
+  .btn.secondary{background:#2a2e3e}
+  .btn.good{background:var(--good);color:#0b140d}
+  .btn.warn{background:var(--warn);color:#1a1000}
+  .muted{color:var(--muted);font-size:13px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .grid{display:grid;gap:10px;grid-template-columns:1fr}
+  @media(min-width:720px){.grid.two{grid-template-columns:1fr 1fr}}
+  table{width:100%;border-collapse:separate;border-spacing:0 8px}
+  th,td{text-align:left;font-size:14px;padding:10px 12px;background:#0f1118;border:1px solid #2a2e3e}
+  th{color:#cbd5e1}
+  .pill{background:#18202f;border:1px solid #273149;padding:6px 10px;border-radius:999px;color:#cbd5e1;font-size:12px}
+  .center{display:flex;align-items:center;justify-content:center;min-height:60vh}
+  .error{color:#e57373;margin-top:8px}
+  .ok{color:#2ecc71;margin-top:8px}
+</style>
+</head>
+<body>
+<div id="gate" class="center">
+  <div class="card" style="width:520px;max-width:92%;">
+    <h1>Enter Admin Passphrase</h1>
+    <label>Passphrase</label>
+    <input id="pass" type="password" placeholder="••••••••" />
+    <div class="row" style="margin-top:10px;">
+      <button class="btn" id="enter">Unlock</button>
+      <span id="gateMsg" class="muted"></span>
+    </div>
+    <p class="muted" style="margin-top:8px;">This page is for your internal use to create & manage license keys.</p>
+  </div>
+</div>
 
+<div id="app" class="container" style="display:none;">
+  <h1>Rivals License Key Generator</h1>
+
+  <div class="card">
+    <div class="grid two">
+      <div>
+        <label>Channel ID</label>
+        <input id="channel" type="text" placeholder="e.g., Droopy or Viewer123">
+        <div class="muted">Keys are stored at <code>/channels/&lt;channel&gt;/licenses/&lt;key&gt;</code></div>
+      </div>
+      <div style="align-self:end" class="row">
+        <button class="btn" id="load">Load Keys</button>
+        <button class="btn good" id="gen">Generate New Key</button>
+      </div>
+    </div>
+    <div id="status" class="muted" style="margin-top:6px;"></div>
+  </div>
+
+  <div class="card">
+    <div class="pill" style="margin-bottom:8px;">Keys</div>
+    <div id="keysEmpty" class="muted">Load a channel to view keys.</div>
+    <div id="keysWrap" style="display:none;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:28%;">Key</th>
+            <th style="width:18%;">Active</th>
+            <th style="width:22%;">Assigned To</th>
+            <th style="width:18%;">Created</th>
+            <th style="width:14%;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="keysTbl"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  // ---- Passphrase gate ----
+  const ADMIN_PASS = "Counthoe05!";
+  const gate = document.getElementById("gate");
+  const app  = document.getElementById("app");
+  const pass = document.getElementById("pass");
+  const enterBtn = document.getElementById("enter");
+  const gateMsg = document.getElementById("gateMsg");
+
+  function unlockUI(){
+    gate.style.display = "none";
+    app.style.display = "block";
+    localStorage.setItem("kg_authed","1");
+  }
+  if(localStorage.getItem("kg_authed")==="1"){ unlockUI(); }
+  enterBtn.onclick = ()=>{
+    if(pass.value === ADMIN_PASS){ unlockUI(); }
+    else { gateMsg.textContent = "Access denied."; gateMsg.className = "error"; }
+  };
+
+  // ---- Firebase setup ----
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { getDatabase, ref, onValue, set, get, update, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey:"AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
+    authDomain:"marvel-rivals-overlay-7f867.firebaseapp.com",
+    databaseURL:"https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+    projectId:"marvel-rivals-overlay-7f867",
+    storageBucket:"marvel-rivals-overlay-7f867.appspot.com",
+    messagingSenderId:"1078364810175",
+    appId:"1:1078364810175:web:fac410007b70b65e348f0a"
+  };
+  const appFB = initializeApp(firebaseConfig, "keygen");
+  const db = getDatabase(appFB);
+  const auth = getAuth(appFB);
+  await signInAnonymously(auth);
+
+  // ---- DOM ----
+  const $ = id => document.getElementById(id);
+  const channelInput = $("channel");
+  const loadBtn = $("load");
+  const genBtn  = $("gen");
+  const status  = $("status");
+  const keysEmpty = $("keysEmpty");
+  const keysWrap  = $("keysWrap");
+  const keysTbl   = $("keysTbl");
+
+  let unsub = null;
+
+  function keyPath(ch){ return `/channels/${ch}/licenses`; }
+
+  function renderKeys(ch, data){
+    keysTbl.innerHTML = "";
+    const entries = Object.entries(data||{}).map(([k,v])=>({key:k, ...(v||{})}));
+    if(!entries.length){ keysEmpty.textContent = `No keys for "${ch}" yet.`; keysEmpty.style.display="block"; keysWrap.style.display="none"; return; }
+    keysEmpty.style.display="none"; keysWrap.style.display="block";
+    entries.sort((a,b)=> (a.created||0) - (b.created||0));
+    for(const row of entries){
+      const tr = document.createElement("tr");
+      tr.style.opacity = row.active===false ? 0.55 : 1;
+
+      const created = row.created ? new Date(row.created).toLocaleString() : "—";
+      tr.innerHTML = `
+        <td><code>${escapeHTML(row.key)}</code></td>
+        <td>${row.active!==false ? "Yes" : "No"}</td>
+        <td>${row.assignedTo ? escapeHTML(row.assignedTo) : "—"}</td>
+        <td>${created}</td>
+        <td>
+          <div class="row" style="gap:6px;">
+            <button class="btn secondary" data-act="copy" data-key="${escapeAttr(row.key)}">Copy</button>
+            <button class="btn ${row.active!==false ? 'warn' : 'good'}" data-act="toggle" data-key="${escapeAttr(row.key)}">
+              ${row.active!==false ? 'Deactivate' : 'Activate'}
+            </button>
+            <button class="btn secondary" data-act="delete" data-key="${escapeAttr(row.key)}">Delete</button>
+          </div>
+        </td>`;
+      keysTbl.appendChild(tr);
+    }
+  }
+
+  function subscribeKeys(ch){
+    if(unsub) unsub();
+    const path = keyPath(ch);
+    const off = onValue(ref(db, path), snap => {
+      renderKeys(ch, snap.val());
+    });
+    unsub = () => off();
+  }
+
+  loadBtn.onclick = ()=>{
+    const ch = channelInput.value.trim();
+    if(!ch){ status.textContent="Enter a channel ID."; status.className="error"; return; }
+    status.textContent = `Loaded: ${ch}`; status.className = "muted";
+    subscribeKeys(ch);
+  };
+
+  genBtn.onclick = async ()=>{
+    const ch = channelInput.value.trim();
+    if(!ch){ status.textContent="Enter a channel ID first."; status.className="error"; return; }
+    const key = genKey();
+    const payload = { active:true, assignedTo: ch, created: Date.now() };
+    await set(ref(db, `${keyPath(ch)}/${key}`), payload);
+    status.textContent = `Generated ${key} for ${ch}`; status.className = "ok";
+    try{ await navigator.clipboard.writeText(key); }catch{}
+  };
+
+  keysTbl.addEventListener("click", async (e)=>{
+    const btn = e.target.closest("button"); if(!btn) return;
+    const act = btn.getAttribute("data-act"); const key = btn.getAttribute("data-key");
+    const ch = channelInput.value.trim(); if(!ch || !key) return;
+    if(act==="copy"){
+      try{ await navigator.clipboard.writeText(key); status.textContent="Copied key to clipboard."; status.className="ok"; }catch{}
+    } else if(act==="toggle"){
+      const refPath = ref(db, `${keyPath(ch)}/${key}`);
+      const snap = await get(refPath); const val = snap.val()||{};
+      const newState = !(val.active===true);
+      await update(refPath, { active:newState });
+      status.textContent = `${newState?'Activated':'Deactivated'} ${key}`; status.className="ok";
+    } else if(act==="delete"){
+      if(!confirm(`Delete key ${key}? This cannot be undone.`)) return;
+      await remove(ref(db, `${keyPath(ch)}/${key}`));
+      status.textContent = `Deleted ${key}`; status.className="ok";
+    }
+  });
+
+  // helpers
+  function genKey(){
+    const seg = ()=> Array.from(crypto.getRandomValues(new Uint8Array(4))).map(b=>(b%36).toString(36).toUpperCase()).join("");
+    return `RVLS-${seg()}-${seg()}`;
+  }
+  function escapeHTML(s){ return (s||"").replace(/[<>&"]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+  function escapeAttr(s){ return (s||"").replace(/"/g, '&quot;'); }
+</script>
+</body>
+</html>
