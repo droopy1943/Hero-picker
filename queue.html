@@ -35,54 +35,30 @@
   .watermark a{ color:#cbd5e1; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
   .watermark a:hover{ text-shadow:0 0 6px #9146ff; }
   .twitch-dot{ display:inline-block; width:14px; height:14px; background:#9146ff; border-radius:50%; }
-  .license-msg{margin-top:8px;font-size:13px;font-weight:500;} .license-msg.good{color:var(--good);} .license-msg.bad{color:var(--accent);}
-  .toast{position:fixed;right:16px;bottom:16px;background:#1a1f2b;color:#e6f3ff;border:1px solid #2b3448;padding:10px 14px;border-radius:10px;box-shadow:0 6px 26px rgba(0,0,0,.35);opacity:0;transform:translateY(8px);transition:all .25s ease}
-  .toast.show{opacity:1;transform:translateY(0)}
 </style>
 </head>
 <body>
   <div class="container">
-    <h1>Rivals Hero Overlay — Admin Queue <span id="licenseStatus" class="status-pill bad">Unlicensed</span></h1>
+    <h1>
+      Rivals Hero Overlay — Admin Queue
+      <span id="licenseStatus" class="status-pill bad">Unlicensed</span>
+    </h1>
 
-    <!-- LICENSE CARD -->
+    <!-- LICENSE -->
     <div class="card" id="licenseCard">
       <div class="pill">License Activation</div>
-      <p class="muted">Enter your purchase key and channel ID to unlock all features.</p>
+      <p class="muted" style="margin:8px 0 10px;">Enter your purchase key and channel ID to unlock all features.</p>
       <div class="grid two">
         <div><label>Purchase Key</label><input id="licenseKey" type="text" placeholder="e.g., MYKEY123" /></div>
         <div><label>Channel ID</label><input id="licenseChannel" type="text" placeholder="e.g., Droopy" /></div>
       </div>
       <div class="row" style="margin-top:10px;">
         <button class="btn teal" id="verifyLicense">Verify License</button>
-        <button class="btn secondary hidden" id="resetLicense">Reset</button>
       </div>
-      <div id="licenseMsg" class="license-msg"></div>
+      <div id="licenseMsg" class="muted"></div>
     </div>
 
-    <!-- HERO PICKER SETUP -->
-    <div class="card disabled" id="pickerSetupCard">
-      <div class="pill">Hero Picker Setup</div>
-      <p class="muted" style="line-height:1.5;">Enter your <b>Streamlabs Donation Page username</b> and a <b>default tip amount</b>.<br/>Example: if your donation link is <code>https://streamlabs.com/droopy2/tip</code>, your username is <b>droopy2</b>.</p>
-      <div class="grid two">
-        <div><label>Streamlabs Donation Username</label><input id="slUser" type="text" placeholder="e.g., droopy2" /></div>
-        <div><label>Default Tip Amount ($)</label><input id="slAmount" type="number" min="1" placeholder="e.g., 5" /></div>
-      </div>
-      <div class="row" style="margin-top:10px;">
-        <button class="btn teal" id="savePickerSetup">Save</button>
-        <button class="btn secondary" id="clearPickerSetup">Clear</button>
-        <span class="muted" id="pickerSavedMsg"></span>
-      </div>
-      <hr class="divider" />
-      <div class="muted">
-        <div><b>Viewer Link</b> (share this):</div>
-        <div class="row" style="margin-top:6px;">
-          <code id="viewerLink">— not generated yet —</code>
-          <button class="btn secondary" id="copyViewer">Copy</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- QUEUE SECTION -->
+    <!-- QUEUE -->
     <div class="card disabled" id="queueCard">
       <div class="flex-between">
         <div class="pill">Queue</div>
@@ -96,15 +72,7 @@
           <label>Hero name</label>
           <select id="manualHero">
             <option value="">Select a hero...</option>
-            <option>Adam Warlock</option><option>Angela</option><option>Black Panther</option><option>Black Widow</option><option>Blade</option>
-            <option>Captain America</option><option>Cloak & Dagger</option><option>Doctor Strange</option><option>Emma Frost</option><option>Groot</option>
-            <option>Hawkeye</option><option>Hela</option><option>Hulk</option><option>Human Torch</option><option>Invisible Woman</option>
-            <option>Iron Fist</option><option>Iron Man</option><option>Jeff the Land Shark</option><option>Loki</option><option>Luna Snow</option>
-            <option>Magik</option><option>Magneto</option><option>Mantis</option><option>Mister Fantastic</option><option>Moon Knight</option>
-            <option>Namor</option><option>Peni Parker</option><option>Phoenix</option><option>Psylocke</option><option>The Punisher</option>
-            <option>The Thing</option><option>Rocket Raccoon</option><option>Scarlet Witch</option><option>Squirrel Girl</option>
-            <option>Spider-Man</option><option>Star-Lord</option><option>Storm</option><option>Thor</option><option>Ultron</option>
-            <option>Venom</option><option>Winter Soldier</option><option>Wolverine</option>
+            <option>Adam Warlock</option><option>Angela</option><option>Black Panther</option><option>Black Widow</option><option>Blade</option><option>Captain America</option><option>Cloak & Dagger</option><option>Doctor Strange</option><option>Emma Frost</option><option>Groot</option><option>Hawkeye</option><option>Hela</option><option>Hulk</option><option>Human Torch</option><option>Invisible Woman</option><option>Iron Fist</option><option>Iron Man</option><option>Jeff the Land Shark</option><option>Loki</option><option>Luna Snow</option><option>Magik</option><option>Magneto</option><option>Mantis</option><option>Mister Fantastic</option><option>Moon Knight</option><option>Namor</option><option>Peni Parker</option><option>Phoenix</option><option>Psylocke</option><option>The Punisher</option><option>The Thing</option><option>Rocket Raccoon</option><option>Scarlet Witch</option><option>Squirrel Girl</option><option>Spider-Man</option><option>Star-Lord</option><option>Storm</option><option>Thor</option><option>Ultron</option><option>Venom</option><option>Winter Soldier</option><option>Wolverine</option>
           </select>
         </div>
         <div>
@@ -117,21 +85,72 @@
       </div>
       <ul id="queueList"></ul>
     </div>
-
-    <!-- STATUS -->
-    <div class="card disabled" id="statusCard">
-      <div class="flex-between"><div class="pill">Status</div><div id="liveStatus" class="pill">Not connected</div></div>
-      <p id="log" class="muted" style="margin:10px 0 0;"></p>
-    </div>
   </div>
 
   <div class="watermark">
-    <a href="https://twitch.tv/droopy" target="_blank"><span>Created by: <strong>Droopy</strong></span><span class="twitch-dot"></span></a>
+    <a href="https://twitch.tv/droopy" target="_blank" rel="noopener"><span>Created by: <strong>Droopy</strong></span><span class="twitch-dot"></span></a>
     <div>v1.5.2</div>
   </div>
 
-  <div class="toast" id="toast">Saved</div>
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <script type="module" src="./queue.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getDatabase, ref, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
+    const app = initializeApp({
+      apiKey:"AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
+      authDomain:"marvel-rivals-overlay-7f867.firebaseapp.com",
+      databaseURL:"https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+      projectId:"marvel-rivals-overlay-7f867",
+      storageBucket:"marvel-rivals-overlay-7f867.appspot.com",
+      messagingSenderId:"1078364810175",
+      appId:"1:1078364810175:web:fac410007b70b65e348f0a"
+    });
+    const db=getDatabase(app); const auth=getAuth(app);
+    await signInAnonymously(auth);
+
+    const $=id=>document.getElementById(id);
+    const manualHero=$("manualHero"), manualDonor=$("manualDonor"), queueList=$("queueList");
+    const verifyLicense=$("verifyLicense"), licenseKey=$("licenseKey"), licenseChannel=$("licenseChannel"), licenseMsg=$("licenseMsg"), statusPill=$("licenseStatus");
+
+    const LICENSE_KEY="mr_license";
+
+    function lockAll(lock){ $("queueCard").classList.toggle("disabled",lock); }
+
+    async function verifyLicenseKey(){
+      const key=licenseKey.value.trim(), ch=licenseChannel.value.trim();
+      if(!key||!ch){licenseMsg.textContent="⚠️ Both fields required.";return;}
+      const snap=await get(ref(db,`/channels/${ch}/licenses/${key}`));
+      const val=snap.val();
+      if(val&&val.active){statusPill.textContent="Licensed";statusPill.className="status-pill good";licenseMsg.textContent="✅ License verified.";lockAll(false);}
+      else{statusPill.textContent="Unlicensed";statusPill.className="status-pill bad";licenseMsg.textContent="❌ Invalid key.";lockAll(true);}
+    }
+
+    verifyLicense.onclick=verifyLicenseKey;
+
+    const cid=()=>licenseChannel.value.trim()||"demo";
+    const qRef=()=>ref(db,`/channels/${cid()}/queue`);
+    const curRef=()=>ref(db,`/channels/${cid()}/current`);
+
+    $("addManual").onclick=async()=>{
+      const hero=manualHero.value.trim(); if(!hero)return alert("Select a hero first.");
+      const donor=manualDonor.value.trim();
+      await push(qRef(),{hero,donor,amount:null,ts:Date.now()});
+      manualHero.value="";manualDonor.value="";
+    };
+
+    $("nextHero").onclick=async()=>{
+      const snap=await get(qRef());const obj=snap.val();if(!obj)return;
+      const entries=Object.entries(obj).map(([k,v])=>({k,v}));
+      entries.sort((a,b)=>(a.v?.ts||0)-(b.v?.ts||0));
+      const first=entries[0];if(!first)return;
+      await set(curRef(),first.v);await remove(ref(db,`/channels/${cid()}/queue/${first.k}`));
+    };
+
+    $("clearQueue").onclick=async()=>{
+      await remove(qRef());
+      await set(curRef(),{hero:"Pick a Hero",donor:"",amount:""});
+    };
+  </script>
 </body>
 </html>
