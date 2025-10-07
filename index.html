@@ -119,7 +119,6 @@
     let streamlabsUser = "droopy";  // fallback
     let defaultAmount = 5;          // fallback
 
-    // Fetch Streamlabs info from Firebase
     async function loadSettings() {
       const settingsRef = ref(db, `/channels/${channelId}/settings`);
       const snap = await get(settingsRef);
@@ -136,8 +135,9 @@
       heroes.forEach(hero => {
         const heroCard = document.createElement("div");
         heroCard.className = "hero-card";
+        const safeHero = hero.replace(/&/g, "and");
         heroCard.innerHTML = `
-          <img src="images/${hero.replace(/[^a-z0-9]/gi, '').toLowerCase()}.png" alt="${hero}">
+          <img src="images/${safeHero}.png" alt="${hero}">
           <div class="hero-name">${hero}</div>
         `;
         heroCard.onclick = () => {
