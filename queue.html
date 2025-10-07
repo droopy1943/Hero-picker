@@ -16,7 +16,6 @@
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   label{display:block;font-size:14px;color:var(--muted);margin-bottom:6px}
   input[type="text"],input[type="password"],input[type="number"],select{ width:360px;max-width:100%;background:#0f1118;color:var(--text);border:1px solid #2a2e3e;border-radius:8px;padding:10px 12px;outline:none }
-  select option{background:#0f1118;color:var(--text);}
   code{background:#0f1118;border:1px solid #2a2e3e;padding:6px 8px;border-radius:8px}
   .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600;letter-spacing:.2px}
   .btn.secondary{background:#2a2e3e} .btn.good{background:var(--good)} .btn.warn{background:var(--warn);color:#1a1000} .btn.teal{background:#139e8a}
@@ -58,7 +57,6 @@
       </div>
       <div class="row" style="margin-top:10px;">
         <button class="btn teal" id="verifyLicense">Verify License</button>
-        <button class="btn secondary hidden" id="resetLicense">Reset</button>
       </div>
       <div id="licenseMsg" class="license-msg"></div>
     </div>
@@ -75,7 +73,9 @@
       <div class="row" style="margin-top:12px;">
         <div>
           <label>Hero name</label>
-          <select id="manualHero"><option value="">Select a hero...</option></select>
+          <select id="manualHero">
+            <option value="">Select a hero...</option>
+          </select>
         </div>
         <div>
           <label>Donor name (optional)</label>
@@ -103,28 +103,78 @@
     <div>v1.5.1</div>
   </div>
 
-  <div class="toast" id="toast">Saved</div>
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, onValue, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { getDatabase, ref, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
-    const firebaseConfig = { apiKey:"AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE", authDomain:"marvel-rivals-overlay-7f867.firebaseapp.com", databaseURL:"https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com", projectId:"marvel-rivals-overlay-7f867", storageBucket:"marvel-rivals-overlay-7f867.appspot.com", messagingSenderId:"1078364810175", appId:"1:1078364810175:web:fac410007b70b65e348f0a" };
-    const app = initializeApp(firebaseConfig); 
-    const db  = getDatabase(app); 
-    const auth = getAuth(app); 
+    const firebaseConfig = {
+      apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
+      authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
+      databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+      projectId: "marvel-rivals-overlay-7f867",
+      storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
+      messagingSenderId: "1078364810175",
+      appId: "1:1078364810175:web:fac410007b70b65e348f0a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
     await signInAnonymously(auth);
 
-    const $=id=>document.getElementById(id); 
-    const manualHero=$("manualHero");
-    const heroesList=[
-      "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America","Cloak & Dagger","Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk","Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark","Loki","Luna Snow","Magik","Magneto","Mantis","Mister Fantastic","Moon Knight","Namor","Peni Parker","Phoenix","Psylocke","The Punisher","The Thing","Rocket Raccoon","Scarlet Witch","Squirrel Girl","Spider-Man","Star-Lord","Storm","Thor","Ultron","Venom","Winter Soldier","Wolverine"
-    ];
-    manualHero.innerHTML = `<option value="">Select a hero...</option>` + heroesList.map(h=>`<option value="${h}">${h}</option>`).join("");
+    const $ = (id) => document.getElementById(id);
 
-    function log(msg){$("log").textContent=`[${new Date().toLocaleTimeString()}] ${msg}\n`+($("log").textContent||"");}
+    const verifyBtn = $("verifyLicense");
+    const licenseMsg = $("licenseMsg");
+    const statusPill = $("licenseStatus");
+    const heroSelect = $("manualHero");
+
+    // Load heroes dynamically (same list as before)
+    const heroes = [
+      "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America",
+      "Cloak & Dagger","Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk",
+      "Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark","Loki",
+      "Luna Snow","Magik","Magneto","Mantis","Mister Fantastic","Moon Knight","Namor",
+      "Peni Parker","Phoenix","Psylocke","The Punisher","The Thing","Rocket Raccoon",
+      "Scarlet Witch","Squirrel Girl","Spider-Man","Star-Lord","Storm","Thor","Ultron",
+      "Venom","Winter Soldier","Wolverine"
+    ];
+    heroes.forEach(h => {
+      const opt = document.createElement("option");
+      opt.value = h;
+      opt.textContent = h;
+      heroSelect.appendChild(opt);
+    });
+
+    verifyBtn.addEventListener("click", async () => {
+      const key = $("licenseKey").value.trim();
+      const channel = $("licenseChannel").value.trim();
+      if (!key || !channel) {
+        licenseMsg.textContent = "⚠️ Enter both fields.";
+        licenseMsg.className = "license-msg bad";
+        return;
+      }
+      try {
+        const snap = await get(ref(db, `/channels/${channel}/licenses/${key}`));
+        const val = snap.val();
+        if (val && val.active === true) {
+          licenseMsg.textContent = "✅ License verified!";
+          licenseMsg.className = "license-msg good";
+          statusPill.textContent = "Licensed";
+          statusPill.className = "status-pill good";
+          document.querySelectorAll(".card.disabled").forEach(c => c.classList.remove("disabled"));
+        } else {
+          licenseMsg.textContent = "❌ Invalid license key.";
+          licenseMsg.className = "license-msg bad";
+          statusPill.textContent = "Unlicensed";
+          statusPill.className = "status-pill bad";
+        }
+      } catch (err) {
+        licenseMsg.textContent = "⚠️ Firebase error.";
+        licenseMsg.className = "license-msg bad";
+      }
+    });
   </script>
 </body>
 </html>
