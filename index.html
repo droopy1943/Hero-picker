@@ -36,15 +36,6 @@
     cursor: pointer;
   }
 
-  .setup-fields {
-    display: none;
-    margin-top: 10px;
-  }
-
-  .setup-card.open .setup-fields {
-    display: block;
-  }
-
   .setup-fields label {
     display: block;
     margin-top: 10px;
@@ -56,6 +47,11 @@
     border-radius: 6px;
     border: none;
     margin-top: 4px;
+  }
+
+  .hint {
+    font-size: 0.85em;
+    color: #aaa;
   }
 
   button {
@@ -145,17 +141,24 @@
   .hero.disabled:hover .tooltip {
     opacity: 1;
   }
+
+  .notice {
+    color: #ccc;
+    font-size: 1.1em;
+    margin-top: 50px;
+  }
 </style>
 </head>
 
 <body>
   <h1>Marvel Rivals Hero Picker</h1>
 
-  <div class="setup-card" id="setupCard">
-    <h2 onclick="toggleSetup()">⚙️ Streamer Setup</h2>
+  <div class="setup-card" id="setupCard" style="display:none;">
+    <h2>⚙️ Streamer Setup – Enter your Streamlabs Donation Page Username</h2>
     <div class="setup-fields">
       <label>Streamlabs Username:
         <input type="text" id="usernameInput" placeholder="e.g. droopy2">
+        <div class="hint">👉 Example: if your donation link is <code>https://streamlabs.com/droopy2/tip</code>, your username is <strong>droopy2</strong>.</div>
       </label>
       <label>Default Donation Amount ($):
         <input type="number" id="amountInput" placeholder="e.g. 5" min="1">
@@ -169,6 +172,7 @@
   </div>
 
   <div id="toast" class="toast">✅ Setup saved!</div>
+  <div id="viewerNotice" class="notice" style="display:none;">⚙️ Streamer setup incomplete — please wait until they finish setup.</div>
 
   <div class="hero-grid" id="heroGrid"></div>
 
@@ -186,10 +190,10 @@
     const heroGrid = document.getElementById("heroGrid");
     const toast = document.getElementById("toast");
     const setupCard = document.getElementById("setupCard");
+    const viewerNotice = document.getElementById("viewerNotice");
 
-    function toggleSetup() {
-      setupCard.classList.toggle("open");
-    }
+    const params = new URLSearchParams(location.search);
+    const isStreamerMode = params.get("view") === "streamer";
 
     function showToast(msg = "✅ Setup saved!") {
       toast.textContent = msg;
@@ -211,7 +215,7 @@
       localStorage.setItem("defaultAmount", amount);
       localStorage.setItem("channelId", channel);
 
-      showToast("✅ Setup saved!");
+      showToast(`✅ Setup saved for ${username} – $${amount} tips`);
       renderHeroes();
     }
 
@@ -226,7 +230,15 @@
 
       const username = localStorage.getItem("streamlabsUser");
       const amount = localStorage.getItem("defaultAmount");
-      const setupComplete = username && amount;
+      const channel = localStorage.getItem("channelId");
+      const setupComplete = username && amount && channel;
+
+      if (!setupComplete && !isStreamerMode) {
+        viewerNotice.style.display = "block";
+        return;
+      } else {
+        viewerNotice.style.display = "none";
+      }
 
       heroes.forEach(hero => {
         const div = document.createElement("div");
@@ -240,7 +252,7 @@
         if (setupComplete) {
           const tipUrl = `https://streamlabs.com/${username}/tip?amount=${amount}&message=I%20want%20to%20request%20${encodeURIComponent(hero)}`;
           div.onclick = () => window.open(tipUrl, "_blank");
-        } else {
+        } else if (isStreamerMode) {
           const tip = document.createElement("div");
           tip.classList.add("tooltip");
           tip.textContent = "Please complete setup first";
@@ -252,11 +264,18 @@
       });
     }
 
-    // Initialize with saved data
     document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("usernameInput").value = localStorage.getItem("streamlabsUser") || "";
-      document.getElementById("amountInput").value = localStorage.getItem("defaultAmount") || "";
-      document.getElementById("channelInput").value = localStorage.getItem("channelId") || "";
+      const username = localStorage.getItem("streamlabsUser") || "";
+      const amount = localStorage.getItem("defaultAmount") || "";
+      const channel = localStorage.getItem("channelId") || "";
+
+      if (isStreamerMode) {
+        setupCard.style.display = "block";
+        document.getElementById("usernameInput").value = username;
+        document.getElementById("amountInput").value = amount;
+        document.getElementById("channelInput").value = channel;
+      }
+
       renderHeroes();
     });
   </script>
