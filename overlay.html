@@ -33,6 +33,14 @@
     object-fit: contain;
     position: relative;
     z-index: 1;
+    transition: all 0.4s ease;
+  }
+
+  /* Fallback “Pick a Hero!” image look */
+  #charImg.default-placeholder {
+    opacity: 0.5; /* slightly dimmed */
+    filter: grayscale(40%) brightness(0.9);
+    transform: scale(0.85);
   }
 
   #borderImg {
@@ -112,8 +120,7 @@
       "Ultron": "Ultron.png",
       "Venom": "Venom.png",
       "Winter Soldier": "Winter Soldier.png",
-      "Wolverine": "Wolverine.png",
-      "Pick a Hero": "pickahero.png" /* 🧩 fallback image */
+      "Wolverine": "Wolverine.png"
     };
 
     const charImgEl = document.getElementById("charImg");
@@ -122,26 +129,30 @@
     function newDonation(heroName, donorName = "") {
       if (!heroName) return;
 
-      const fileName = characters[heroName] || `${heroName}.png`;
+      const heroKey = Object.keys(characters).find(
+        key => key.toLowerCase() === heroName.trim().toLowerCase()
+      );
 
-      console.log("Trying:", `images/${fileName}`);
-      charImgEl.onerror = () => {
-        console.warn(`Could not load image for "${heroName}"`);
-      };
-
-      charImgEl.src = `images/${fileName}`;
-      charImgEl.style.display = "block";
-      donorTextEl.textContent =
-        heroName === "Pick a Hero"
-          ? ""
-          : donorName
-          ? `Requested by ${donorName}`
-          : "";
+      if (heroKey) {
+        const fileName = characters[heroKey];
+        const path = `images/${fileName}`;
+        console.log("✅ Showing hero image:", path);
+        charImgEl.src = path;
+        charImgEl.classList.remove("default-placeholder");
+        charImgEl.style.display = "block";
+        donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
+      } else {
+        console.warn("Hero not found:", heroName);
+        charImgEl.src = "images/default_hero.png";
+        charImgEl.classList.add("default-placeholder");
+        donorTextEl.textContent = "Pick a Hero!";
+      }
     }
 
     window.newDonation = newDonation;
   </script>
 
+  <!-- Firebase connection -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
@@ -162,21 +173,24 @@
     const params = new URLSearchParams(location.search);
     const channelId = params.get("channel") || "demo";
 
+    const charImgEl = document.getElementById("charImg");
+    const donorTextEl = document.getElementById("donorText");
+
     onValue(ref(db, `/channels/${channelId}/current`), (snap) => {
-  const cur = snap.val();
-  
-  if (!cur || !cur.hero) {
-    // Show default image when no hero is active
-    console.log("No current hero — showing default image.");
-    charImgEl.src = "images/default_hero.png"; // your fallback image
-    donorTextEl.textContent = "Pick a Hero!";
-    return;
-  }
+      const cur = snap.val();
 
-  console.log("Now showing:", cur.hero, "by", cur.donor || "Anonymous");
-  newDonation(cur.hero.trim(), cur.donor);
-});
+      if (!cur || !cur.hero) {
+        console.log("No current hero — showing default image.");
+        charImgEl.src = "images/default_hero.png";
+        charImgEl.classList.add("default-placeholder");
+        donorTextEl.textContent = "Pick a Hero!";
+        return;
+      }
 
+      console.log("Now showing:", cur.hero, "by", cur.donor || "Anonymous");
+      charImgEl.classList.remove("default-placeholder");
+      newDonation(cur.hero.trim(), cur.donor);
+    });
   </script>
 </body>
 </html>
