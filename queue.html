@@ -407,10 +407,12 @@
     };
 
     clearBtn.onclick = async ()=>{
-      if (!confirm("Clear ALL items from the queue?")) return;
-      await remove(qRef());
-      log("Queue cleared.");
-    };
+  if (!confirm("Clear ALL items from the queue?")) return;
+  await remove(qRef());
+  await set(curRef(), { hero: "Pick a Hero", donor: "", ts: Date.now() }); // 🧩 reset overlay display
+  log("Queue cleared and overlay reset to 'Pick a Hero'.");
+};
+
 
     testWriteBtn.onclick = async ()=>{
       await push(qRef(), { hero:"Blade", donor:"Test", ts: Date.now() });
