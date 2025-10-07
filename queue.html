@@ -40,6 +40,17 @@
   #log{white-space:pre-wrap}
   .toast{position:fixed;right:16px;bottom:16px;background:#1a1f2b;color:#e6f3ff;border:1px solid #2b3448;padding:10px 14px;border-radius:10px;box-shadow:0 6px 26px rgba(0,0,0,.35);opacity:0;transform:translateY(8px);transition:all .25s ease}
   .toast.show{opacity:1;transform:translateY(0)}
+
+  /* footer watermark */
+  .watermark{
+    position:fixed; right:16px; bottom:16px; text-align:right; font-size:12px; color:#cbd5e1;
+    line-height:1.3; z-index:50; pointer-events:auto;
+  }
+  .watermark a{
+    color:#cbd5e1; text-decoration:none; display:inline-flex; align-items:center; gap:6px;
+  }
+  .watermark a:hover{ text-shadow:0 0 6px #9146ff; }
+  .twitch-dot{ display:inline-block; width:14px; height:14px; background:#9146ff; border-radius:50%; }
 </style>
 </head>
 <body>
@@ -66,7 +77,13 @@
 
       <div class="row" style="margin-top:10px;">
         <button class="btn good" id="verifyLicense">Verify License</button>
+        <button class="btn secondary hidden" id="resetLicense">Reset License</button>
+        <span id="licenseStatus" class="muted"></span>
       </div>
+
+      <p class="muted" style="margin-top:10px;">
+        Don’t have a key? <a href="https://twitch.tv/droopy" target="_blank" style="color:var(--link)">Contact Droopy</a>
+      </p>
     </div>
 
     <!-- 1) HERO PICKER SETUP -->
@@ -167,19 +184,7 @@
           <label>Hero name</label>
           <input id="manualHero" type="text" list="heroes" placeholder="Type or pick a hero..." />
           <datalist id="heroes">
-            <option>Adam Warlock</option><option>Angela</option><option>Black Panther</option>
-            <option>Black Widow</option><option>Blade</option><option>Captain America</option>
-            <option>Cloak & Dagger</option><option>Doctor Strange</option><option>Emma Frost</option>
-            <option>Groot</option><option>Hawkeye</option><option>Hela</option><option>Hulk</option>
-            <option>Human Torch</option><option>Invisible Woman</option><option>Iron Fist</option>
-            <option>Iron Man</option><option>Jeff the Land Shark</option><option>Loki</option>
-            <option>Luna Snow</option><option>Magik</option><option>Magneto</option><option>Mantis</option>
-            <option>Mister Fantastic</option><option>Moon Knight</option><option>Namor</option>
-            <option>Peni Parker</option><option>Phoenix</option><option>Psylocke</option>
-            <option>The Punisher</option><option>The Thing</option><option>Rocket Raccoon</option>
-            <option>Scarlet Witch</option><option>Squirrel Girl</option><option>Spider-Man</option>
-            <option>Star-Lord</option><option>Storm</option><option>Thor</option><option>Ultron</option>
-            <option>Venom</option><option>Winter Soldier</option><option>Wolverine</option>
+            <!-- will be populated from herolist.json -->
           </datalist>
         </div>
         <div>
@@ -198,10 +203,30 @@
     <div class="card" id="statusCard">
       <div class="flex-between">
         <div class="pill">Status</div>
-        <div id="liveStatus" class="pill">Not connected</div>
+        <div class="row" style="gap:6px;">
+          <div id="licenseBadge" class="pill">Unlicensed</div>
+          <div id="liveStatus" class="pill">Not connected</div>
+        </div>
       </div>
       <p id="log" class="muted" style="margin:10px 0 0;"></p>
+
+      <!-- hidden debug toggles (Shift+Click 'Status' pill to reveal) -->
+      <div id="debugPanel" class="muted hidden" style="margin-top:10px;">
+        <div class="row">
+          <button class="btn secondary" id="dbgRefresh">Force Refresh Queue</button>
+          <button class="btn secondary" id="dbgClearLS">Clear Local Storage</button>
+          <span id="dbgInfo"></span>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <!-- footer watermark -->
+  <div class="watermark">
+    <a href="https://twitch.tv/droopy" target="_blank" rel="noopener">
+      <span>Created by: <strong>Droopy</strong></span><span class="twitch-dot" title="Twitch"></span>
+    </a>
+    <div>v1.3</div>
   </div>
 
   <!-- toast -->
@@ -228,191 +253,310 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const db  = getDatabase(app);
     const auth = getAuth(app);
     await signInAnonymously(auth);
 
+    // dom helpers
     const $ = id => document.getElementById(id);
     const toast = $("toast");
+    const heroesDL = $("heroes");
     function showToast(msg){ toast.textContent=msg; toast.classList.add("show"); setTimeout(()=>toast.classList.remove("show"),1500); }
 
     // elements
-    const slUserInput=$("slUser"),slAmountInput=$("slAmount"),savePickerBtn=$("savePickerSetup"),clearPicker=$("clearPickerSetup"),pickerSavedMsg=$("pickerSavedMsg"),viewerLinkEl=$("viewerLink"),copyViewerBtn=$("copyViewer");
-    const toggleSetupBtn=$("toggleSetup"),setupBody=$("setupBody"),channelIdInput=$("channelId"),slTokenInput=$("slToken"),saveSetupBtn=$("saveSetup"),testWriteBtn=$("testWrite"),connectSLBtn=$("connectSL"),setupStatus=$("setupStatus"),overlayUrlEl=$("overlayUrl"),copyOverlayBtn=$("copyOverlay"),openOverlayA=$("openOverlay");
-    const manualHero=$("manualHero"),manualDonor=$("manualDonor"),addManualBtn=$("addManual"),nextBtn=$("nextHero"),clearBtn=$("clearQueue"),queueList=$("queueList"),liveStatus=$("liveStatus"),logEl=$("log");
+    const licenseCard = $("licenseCard");
+    const licenseKeyInput = $("licenseKey");
+    const licenseChannelInput = $("licenseChannel");
+    const verifyLicenseBtn = $("verifyLicense");
+    const resetLicenseBtn = $("resetLicense");
+    const licenseStatus = $("licenseStatus");
+    const licenseBadge = $("licenseBadge");
+    const LICENSE_KEY = "mr_license";
+
+    const slUserInput=$("slUser"), slAmountInput=$("slAmount"), savePickerBtn=$("savePickerSetup"), clearPicker=$("clearPickerSetup"), pickerSavedMsg=$("pickerSavedMsg"), viewerLinkEl=$("viewerLink"), copyViewerBtn=$("copyViewer");
+    const toggleSetupBtn=$("toggleSetup"), setupBody=$("setupBody"), channelIdInput=$("channelId"), slTokenInput=$("slToken"), saveSetupBtn=$("saveSetup"), testWriteBtn=$("testWrite"), connectSLBtn=$("connectSL"), setupStatus=$("setupStatus"), overlayUrlEl=$("overlayUrl"), copyOverlayBtn=$("copyOverlay"), openOverlayA=$("openOverlay");
+    const manualHero=$("manualHero"), manualDonor=$("manualDonor"), addManualBtn=$("addManual"), nextBtn=$("nextHero"), clearBtn=$("clearQueue"), queueList=$("queueList"), liveStatus=$("liveStatus"), logEl=$("log");
 
     // persist keys
-    const CFG_KEY="mr_cfg",PKR_KEY="mr_picker";
+    const CFG_KEY="mr_cfg", PKR_KEY="mr_picker";
 
-    const cfg=JSON.parse(localStorage.getItem(CFG_KEY)||"{}");
-    const pkr=JSON.parse(localStorage.getItem(PKR_KEY)||"{}");
-    if(cfg.channelId)channelIdInput.value=cfg.channelId;
-    if(cfg.slToken)slTokenInput.value=cfg.slToken;
-    if(pkr.slUser)slUserInput.value=pkr.slUser;
-    if(pkr.amount)slAmountInput.value=pkr.amount;
+    // load saved
+    const cfg  = JSON.parse(localStorage.getItem(CFG_KEY) || "{}");
+    const pkr  = JSON.parse(localStorage.getItem(PKR_KEY) || "{}");
+    if (cfg.channelId) channelIdInput.value = cfg.channelId;
+    if (cfg.slToken)   slTokenInput.value   = cfg.slToken;
+    if (pkr.slUser)    slUserInput.value    = pkr.slUser;
+    if (pkr.amount)    slAmountInput.value  = pkr.amount;
 
-    const cid=()=> (channelIdInput.value||"").trim() || "demo";
-    const qRef=()=> ref(db,`/channels/${cid()}/queue`);
-    const curRef=()=> ref(db,`/channels/${cid()}/current`);
-    const settingsRef=()=> ref(db,`/channels/${cid()}/settings`);
+    // computed paths
+    const cid = () => (channelIdInput.value||"").trim() || "demo";
+    const qRef = () => ref(db, `/channels/${cid()}/queue`);
+    const curRef = () => ref(db, `/channels/${cid()}/current`);
+    const settingsRef = () => ref(db, `/channels/${cid()}/settings`);
 
     function setOverlayUrl(){
-      const url=`https://droopy1943.github.io/Hero-picker/overlay.html?channel=${encodeURIComponent(cid())}`;
-      overlayUrlEl.textContent=url;
-      openOverlayA.href=url;
+      const url = `https://droopy1943.github.io/Hero-picker/overlay.html?channel=${encodeURIComponent(cid())}`;
+      overlayUrlEl.textContent = url;
+      openOverlayA.href = url;
     }
     setOverlayUrl();
 
     function setViewerLink(){
-      const ch=cid(),slUser=(slUserInput.value||"").trim(),amt=(slAmountInput.value||"").trim();
-      if(slUser&&amt&&ch){
-        viewerLinkEl.textContent=`https://droopy1943.github.io/Hero-picker/heroes.html?channel=${encodeURIComponent(ch)}`;
-      } else viewerLinkEl.textContent="— not generated yet —";
+      const ch = cid();
+      const slUser = (slUserInput.value||"").trim();
+      const amt = (slAmountInput.value||"").trim();
+      if (slUser && amt && ch){
+        viewerLinkEl.textContent = `https://droopy1943.github.io/Hero-picker/heroes.html?channel=${encodeURIComponent(ch)}`;
+      } else {
+        viewerLinkEl.textContent = "— not generated yet —";
+      }
     }
     setViewerLink();
 
-    function setLocked(locked){
-      const cards=[$("mainSetupCard"),$("queueCard"),$("statusCard")];
-      cards.forEach(c=>c.classList.toggle("disabled",!!locked));
+    // --------- License logic (Firebase-bound to Channel ID) ---------
+    let licenseVerified = false;
+
+    async function verifyLicense(manual=false){
+      const key=(licenseKeyInput.value||"").trim();
+      const channel=(licenseChannelInput.value||$("channelId").value||"").trim();
+      if(!key||!channel){ if(manual) showToast("⚠️ Enter both license key and Channel ID."); lockAll(true); return false; }
+
+      try{
+        const licenseRef=ref(db, `/channels/${channel}/licenses/${key}`);
+        const snap=await get(licenseRef);
+        const data=snap.val();
+        if(data && (data.active===true || data.valid===true)){
+          localStorage.setItem(LICENSE_KEY, JSON.stringify({ key, channel }));
+          licenseVerified = true;
+          licenseBadge.textContent = "Licensed";
+          licenseBadge.style.borderColor = "#214f2e"; licenseBadge.style.background="#163522"; licenseBadge.style.color="#b8f5c7";
+          licenseStatus.textContent = "✔ License Verified";
+          licenseStatus.style.color = "#2ecc71";
+          resetLicenseBtn.classList.remove("hidden");
+          licenseCard.classList.add("hidden");
+          showToast("✅ License verified");
+          await checkPickerSetupState();
+          return true;
+        } else {
+          if(manual) showToast("🚫 Invalid or inactive license key.");
+          licenseVerified = false;
+          licenseBadge.textContent = "Unlicensed";
+          licenseBadge.removeAttribute("style");
+          lockAll(true);
+          return false;
+        }
+      }catch(e){
+        console.error(e);
+        if(manual) showToast("🚫 License check failed (network).");
+        licenseVerified = false;
+        licenseBadge.textContent = "Unlicensed";
+        licenseBadge.removeAttribute("style");
+        lockAll(true);
+        return false;
+      }
+    }
+
+    verifyLicenseBtn.onclick = async ()=>{ await verifyLicense(true); };
+
+    resetLicenseBtn.onclick = ()=>{
+      localStorage.removeItem(LICENSE_KEY);
+      licenseVerified = false;
+      licenseBadge.textContent = "Unlicensed";
+      licenseBadge.removeAttribute("style");
+      licenseStatus.textContent = "";
+      licenseKeyInput.value = ""; licenseChannelInput.value = "";
+      licenseCard.classList.remove("hidden");
+      lockAll(true);
+      showToast("🔁 License reset");
+    };
+
+    // Auto-verify on load
+    (async()=>{
+      const saved = JSON.parse(localStorage.getItem(LICENSE_KEY) || "null");
+      if(saved?.key && saved?.channel){
+        licenseKeyInput.value = saved.key;
+        licenseChannelInput.value = saved.channel;
+        await verifyLicense(false);
+      } else {
+        lockAll(true);
+      }
+    })();
+
+    // --------- Locking & autosave ---------
+    function lockAll(locked){
+      const cards = [$("mainSetupCard"), $("queueCard"), $("statusCard"), $("pickerSetupCard")];
+      cards.forEach(c => c.classList.toggle("disabled", !!locked));
     }
 
     async function checkPickerSetupState(){
-      const ok=!!(slUserInput.value&&slAmountInput.value&&cid());
-      setLocked(!ok);
+      const ok = !!(licenseVerified && (slUserInput.value && slAmountInput.value && cid()));
+      lockAll(!ok);
       return ok;
     }
 
-    toggleSetupBtn.onclick=()=>{
-      const hide=!setupBody.classList.contains("hidden");
-      setupBody.classList.toggle("hidden",hide);
-      toggleSetupBtn.textContent=hide?"Expand":"Collapse";
-    };
+    // Debounced autosave helper
+    function debounce(fn, ms=600){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
 
-    savePickerBtn.onclick=async()=>{
-      const slUser=(slUserInput.value||"").trim(),amount=(slAmountInput.value||"").trim(),ch=cid();
-      if(!slUser||!amount||!ch){showToast("⚠️ Fill Streamlabs username, amount, and Channel ID (below) first.");return;}
-      await set(settingsRef(),{streamlabsUser:slUser,defaultAmount:amount,channelId:ch});
-      localStorage.setItem(PKR_KEY,JSON.stringify({slUser,amount}));
-      pickerSavedMsg.textContent="Saved ✔";
-      setViewerLink();
-      showToast("✅ Hero Picker setup saved");
-      await checkPickerSetupState();
-    };
+    // Auto-save picker + cfg on input
+    const autoSavePicker = debounce(()=>{
+      const slUser=(slUserInput.value||"").trim();
+      const amount=(slAmountInput.value||"").trim();
+      if(!slUser || !amount) return;
+      localStorage.setItem(PKR_KEY, JSON.stringify({ slUser, amount }));
+      set(settingsRef(), { streamlabsUser: slUser, defaultAmount: amount, channelId: cid() })
+        .then(()=>{ setViewerLink(); pickerSavedMsg.textContent="Saved ✔"; setTimeout(()=>pickerSavedMsg.textContent="",1400); })
+        .catch(()=>{});
+    });
 
-    clearPicker.onclick=()=>{
-      localStorage.removeItem(PKR_KEY);
-      slUserInput.value="";slAmountInput.value="";
-      setViewerLink();
-      pickerSavedMsg.textContent="";
-      setLocked(true);
-      showToast("🧹 Picker setup cleared");
-    };
-
-    copyViewerBtn.onclick=async()=>{
-      try{await navigator.clipboard.writeText(viewerLinkEl.textContent);copyViewerBtn.textContent="Copied!";setTimeout(()=>copyViewerBtn.textContent="Copy",900);}catch{}
-    };
-
-    saveSetupBtn.onclick=()=>{
-      const payload={channelId:cid(),slToken:(slTokenInput.value||"").trim()};
-      localStorage.setItem(CFG_KEY,JSON.stringify(payload));
-      setOverlayUrl();setViewerLink();
-      setupStatus.textContent="Saved ✔";
-      setupStatus.style.color="#2ecc71";
-      setTimeout(()=>{setupStatus.textContent="";setupStatus.removeAttribute("style");},1400);
-      log(`Saved settings for channel: ${payload.channelId}`);
+    const autoSaveCfg = debounce(()=>{
+      const payload = { channelId: cid(), slToken: (slTokenInput.value||"").trim() };
+      localStorage.setItem(CFG_KEY, JSON.stringify(payload));
+      setOverlayUrl(); setViewerLink();
+      setupStatus.textContent = "Saved ✔";
+      setupStatus.style.color = "#2ecc71";
+      setTimeout(()=>{ setupStatus.textContent=""; setupStatus.removeAttribute("style"); }, 1400);
       resubscribeQueue();
-      checkPickerSetupState();
-    };
+    });
 
-    copyOverlayBtn.onclick=async()=>{
-      try{await navigator.clipboard.writeText(overlayUrlEl.textContent);copyOverlayBtn.textContent="Copied!";setTimeout(()=>copyOverlayBtn.textContent="Copy",900);}catch{}
-    };
+    slUserInput.addEventListener("input", autoSavePicker);
+    slAmountInput.addEventListener("input", autoSavePicker);
+    channelIdInput.addEventListener("input", autoSaveCfg);
+    slTokenInput.addEventListener("input", autoSaveCfg);
 
-    let unsub=null;
+    // Keep manual buttons too (for folks who prefer clicking)
+    savePickerBtn.onclick = autoSavePicker;
+    saveSetupBtn.onclick = autoSaveCfg;
+
+    // --------- Populate datalist from herolist.json ---------
+    (async()=>{
+      try{
+        const res = await fetch("./herolist.json", { cache: "no-store" });
+        const list = await res.json(); // expect array of hero names
+        const names = Array.isArray(list) ? list : (Array.isArray(list?.heroes) ? list.heroes : []);
+        if(names.length){
+          heroesDL.innerHTML = names.map(h=>`<option>${escapeHTML(h)}</option>`).join("");
+        } else {
+          // fallback to your previous hardcoded list if JSON empty
+          const fallback = ["Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America","Cloak & Dagger","Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk","Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark","Loki","Luna Snow","Magik","Magneto","Mantis","Mister Fantastic","Moon Knight","Namor","Peni Parker","Phoenix","Psylocke","The Punisher","The Thing","Rocket Raccoon","Scarlet Witch","Squirrel Girl","Spider-Man","Star-Lord","Storm","Thor","Ultron","Venom","Winter Soldier","Wolverine"];
+          heroesDL.innerHTML = fallback.map(h=>`<option>${escapeHTML(h)}</option>`).join("");
+        }
+      }catch(e){
+        console.warn("herolist.json load failed, using fallback", e);
+      }
+    })();
+
+    // --------- Queue live subscription ---------
+    let unsub = null;
     function resubscribeQueue(){
-      if(unsub)unsub();
-      const off=onValue(qRef(),snap=>{
-        const obj=snap.val()||{};
-        const items=Object.entries(obj).map(([key,val])=>({key,...(val||{})}));
-        items.sort((a,b)=>(a.ts||0)-(b.ts||0));
+      if (unsub) unsub();
+      const off = onValue(qRef(), (snap)=>{
+        const obj = snap.val() || {};
+        const items = Object.entries(obj).map(([key,val])=>({key, ...(val||{})}));
+        items.sort((a,b)=> (a.ts||0)-(b.ts||0));
         renderQueue(items);
       });
-      unsub=()=>off();
-      liveStatus.textContent=`Listening @ /channels/${cid()}/queue`;
+      unsub = ()=> off();
+      liveStatus.textContent = `Listening @ /channels/${cid()}/queue`;
     }
     resubscribeQueue();
 
     function renderQueue(items){
-      queueList.innerHTML="";
+      queueList.innerHTML = "";
       items.forEach((it,i)=>{
-        const li=document.createElement("li");
-        li.innerHTML=`<div>#${i+1} — <strong>${sanitize(it.hero||"")}</strong> ${it.donor?`<span class="muted">by ${sanitize(it.donor)}</span>`:""}</div><div class="muted">${it.ts?new Date(it.ts).toLocaleTimeString():""}</div>`;
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <div>#${i+1} — <strong>${sanitize(it.hero||"")}</strong> ${it.donor?`<span class="muted">by ${sanitize(it.donor)}</span>`:""}</div>
+          <div class="muted">${it.ts? new Date(it.ts).toLocaleTimeString():""}</div>`;
         queueList.appendChild(li);
       });
     }
 
-    addManualBtn.onclick=async()=>{
-      const hero=(manualHero.value||"").trim();
-      if(!hero)return alert("Enter a hero name.");
-      const donor=(manualDonor.value||"").trim();
-      await push(qRef(),{hero,donor:donor||null,amount:null,ts:Date.now()});
-      manualHero.value="";manualDonor.value="";
+    // Add / Next / Clear
+    addManualBtn.onclick = async ()=>{
+      if(!licenseVerified){ return alert("Enter a valid license first."); }
+      const hero = (manualHero.value||"").trim();
+      if (!hero) return alert("Enter a hero name.");
+      const donor = (manualDonor.value||"").trim();
+      await push(qRef(), { hero, donor: donor||null, amount:null, ts:Date.now() });
+      manualHero.value = ""; manualDonor.value = "";
       log(`Added to queue: ${hero}${donor?` by ${donor}`:""}`);
     };
 
-    nextBtn.onclick=async()=>{
-      const snap=await get(qRef());
-      const obj=snap.val();
-      if(!obj)return alert("Queue empty.");
-      const entries=Object.entries(obj).map(([k,v])=>({k,v}));
-      entries.sort((a,b)=>(a.v?.ts||0)-(b.v?.ts||0));
-      const first=entries[0];
-      if(!first)return;
-      await set(curRef(),first.v);
-      await remove(ref(db,`/channels/${cid()}/queue/${first.k}`));
+    nextBtn.onclick = async ()=>{
+      if(!licenseVerified){ return alert("Enter a valid license first."); }
+      const snap = await get(qRef());
+      const obj = snap.val();
+      if (!obj) return alert("Queue empty.");
+      const entries = Object.entries(obj).map(([k,v])=>({k,v}));
+      entries.sort((a,b)=> (a.v?.ts||0) - (b.v?.ts||0));
+      const first = entries[0];
+      if (!first) return;
+      await set(curRef(), first.v);
+      await remove(ref(db, `/channels/${cid()}/queue/${first.k}`));
       log(`Sent to overlay: ${first.v.hero}${first.v.donor?` by ${first.v.donor}`:""}`);
     };
 
-    clearBtn.onclick=async()=>{
-      if(!confirm("Clear ALL items from the queue?"))return;
+    clearBtn.onclick = async ()=>{
+      if(!licenseVerified){ return alert("Enter a valid license first."); }
+      if (!confirm("Clear ALL items from the queue?")) return;
       await remove(qRef());
       log("Queue cleared.");
     };
 
-    testWriteBtn.onclick=async()=>{
-      await push(qRef(),{hero:"Blade",donor:"Test",ts:Date.now()});
+    testWriteBtn.onclick = async ()=>{
+      if(!licenseVerified){ return alert("Enter a valid license first."); }
+      await push(qRef(), { hero:"Blade", donor:"Test", ts: Date.now() });
       log("Test: wrote Blade to your queue.");
       alert("✅ Test wrote to Firebase. Check the Queue list below.");
     };
 
+    // Streamlabs socket
     let socket;
-    connectSLBtn.onclick=()=>{
-      const token=(slTokenInput.value||"").trim();
-      if(!token)return alert("Paste your Streamlabs Socket Token first.");
-      if(socket?.connected)socket.disconnect();
-      socket=io("https://sockets.streamlabs.com",{transports:["websocket"],query:{token}});
-      socket.on("connect",()=>log("Streamlabs socket: connected"));
-      socket.on("disconnect",()=>log("Streamlabs socket: disconnected"));
-      socket.on("event",async(eventData)=>{
-        if(eventData.type!=="donation")return;
-        const arr=Array.isArray(eventData.message)?eventData.message:[eventData.message];
-        for(const m of arr){
-          const name=m.name||"Anonymous";
-          const amount=Number(m.amount||0);
-          const note=(m.message||"")+"";
-          const match=note.match(/I\s*want\s*to\s*request\s*\[([^\]]+)\]/i);
-          if(!match)continue;
-          const hero=match[1].trim();
-          await push(qRef(),{hero,donor:name,amount,ts:Date.now()});
+    connectSLBtn.onclick = ()=>{
+      if(!licenseVerified){ return alert("Enter a valid license first."); }
+      const token = (slTokenInput.value||"").trim();
+      if (!token) return alert("Paste your Streamlabs Socket Token first.");
+      if (socket?.connected) socket.disconnect();
+      socket = io("https://sockets.streamlabs.com", { transports:["websocket"], query:{ token }});
+      socket.on("connect", ()=> log("Streamlabs socket: connected"));
+      socket.on("disconnect", ()=> log("Streamlabs socket: disconnected"));
+      socket.on("event", async (eventData)=>{
+        if (eventData.type !== "donation") return;
+        const arr = Array.isArray(eventData.message) ? eventData.message : [eventData.message];
+        for (const m of arr){
+          const name = m.name || "Anonymous";
+          const amount = Number(m.amount||0);
+          const note = (m.message||"")+""; // expected: I want to request [Hero]
+          const match = note.match(/I\s*want\s*to\s*request\s*\[([^\]]+)\]/i);
+          if (!match) continue;
+          const hero = match[1].trim();
+          await push(qRef(), { hero, donor:name, amount, ts:Date.now() });
           log(`Donation queued: ${hero} by ${name} ($${amount})`);
         }
       });
       alert("Connected to Streamlabs. Leave this page open during your stream.");
     };
 
-    function sanitize(s){return (s||"").replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}
-    function log(msg){logEl.textContent=`[${new Date().toLocaleTimeString()}] ${msg}\n`+(logEl.textContent||"");}
+    // Debug tools
+    $("statusCard").querySelector(".pill").addEventListener("click", (e)=>{
+      if (e.shiftKey){ $("debugPanel").classList.toggle("hidden"); updateDbg(); }
+    });
+    $("dbgRefresh").onclick = ()=> resubscribeQueue();
+    $("dbgClearLS").onclick = ()=>{
+      localStorage.removeItem(CFG_KEY);
+      localStorage.removeItem(PKR_KEY);
+      localStorage.removeItem(LICENSE_KEY);
+      showToast("Local storage cleared");
+      location.reload();
+    };
+    function updateDbg(){ $("dbgInfo").textContent = `Path: /channels/${cid()}/*  | Licensed: ${licenseVerified}`; }
 
+    // Utils
+    function sanitize(s){return (s||"").replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}
+    function escapeHTML(s){return sanitize(s);}
+    function log(msg){ logEl.textContent = `[${new Date().toLocaleTimeString()}] ${msg}\n` + (logEl.textContent||""); }
+
+    // init lock state
     await checkPickerSetupState();
   </script>
 </body>
