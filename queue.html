@@ -258,20 +258,77 @@
 
     function lockAll(locked){["pickerSetupCard","mainSetupCard","queueCard","statusCard"].forEach(id=>$(id).classList.toggle("disabled",!!locked));}
 
-    async function verifyLicense(manual=false){
-      const key=licenseKeyInput.value.trim(), ch=licenseChannelInput.value.trim();
-      if(!key||!ch){ licenseMsg.textContent="⚠️ Please enter both fields."; licenseMsg.className="license-msg bad"; statusPill.textContent="Unlicensed"; statusPill.className="status-pill bad"; lockAll(true); return false; }
-      try{
-        const snap=await get(ref(db, `/channels/${ch}/licenses/${key}`)); const val=snap.val();
-        if(val && (val.active===true || val.valid===true)){
-          localStorage.setItem(LICENSE_KEY, JSON.stringify({ key, channel: ch }));
-          statusPill.textContent="Licensed"; statusPill.className="status-pill good";
-          licenseMsg.textContent="✅ License verified" + (val.assignedTo?` for ${val.assignedTo}`:""); licenseMsg.className="license-msg good";
-          $("resetLicense").classList.remove("hidden"); $("licenseCard").classList.add("hidden");
-          lockAll(false); setOverlayUrl(); setViewerLink(); await ensurePlaceholderCurrent(ch); return true;
-        } else { licenseMsg.textContent="❌ Invalid or inactive key."; licenseMsg.className="license-msg bad"; statusPill.textContent="Unlicensed"; statusPill.className="status-pill bad"; lockAll(true); return false; }
-      }catch(e){ licenseMsg.textContent="⚠️ Network error — try again."; licenseMsg.className="license-msg bad"; statusPill.textContent="Unlicensed"; statusPill.className="status-pill bad"; lockAll(true); return false; }
+    async function verifyLicense(manual = false) {
+  const key = licenseKeyInput.value.trim(),
+        ch = licenseChannelInput.value.trim();
+
+  if (!key || !ch) {
+    licenseMsg.textContent = "⚠️ Please enter both fields.";
+    licenseMsg.className = "license-msg bad";
+    statusPill.textContent = "Unlicensed";
+    statusPill.className = "status-pill bad";
+    lockAll(true);
+    return false;
+  }
+
+  try {
+    const licenseRef = ref(db, `/channels/${ch}/licenses/${key}`);
+    const snap = await get(licenseRef);
+    const val = snap.val();
+
+    if (val && (val.active === true || val.valid === true)) {
+      localStorage.setItem(LICENSE_KEY, JSON.stringify({ key, channel: ch }));
+      statusPill.textContent = "Licensed";
+      statusPill.className = "status-pill good";
+      licenseMsg.textContent =
+        "✅ License verified" + (val.assignedTo ? ` for ${val.assignedTo}` : "");
+      licenseMsg.className = "license-msg good";
+      $("resetLicense").classList.remove("hidden");
+      $("licenseCard").classList.add("hidden");
+      lockAll(false);
+      setOverlayUrl();
+      setViewerLink();
+      await ensurePlaceholderCurrent(ch);
+      return true;
+    } else {
+      // Auto-create license if missing
+      if (!val) {
+        await set(licenseRef, {
+          active: true,
+          assignedTo: ch,
+          createdAt: Date.now(),
+        });
+        licenseMsg.textContent = "🆕 New license created and verified!";
+        licenseMsg.className = "license-msg good";
+        statusPill.textContent = "Licensed";
+        statusPill.className = "status-pill good";
+        $("resetLicense").classList.remove("hidden");
+        $("licenseCard").classList.add("hidden");
+        lockAll(false);
+        setOverlayUrl();
+        setViewerLink();
+        await ensurePlaceholderCurrent(ch);
+        return true;
+      } else {
+        licenseMsg.textContent = "❌ Invalid or inactive key.";
+        licenseMsg.className = "license-msg bad";
+        statusPill.textContent = "Unlicensed";
+        statusPill.className = "status-pill bad";
+        lockAll(true);
+        return false;
+      }
     }
+  } catch (e) {
+    console.error("License verify error:", e);
+    licenseMsg.textContent = "⚠️ Network error — try again.";
+    licenseMsg.className = "license-msg bad";
+    statusPill.textContent = "Unlicensed";
+    statusPill.className = "status-pill bad";
+    lockAll(true);
+    return false;
+  }
+}
+
 
     $("verifyLicense").onclick=()=>verifyLicense(true);
     $("resetLicense").onclick=()=>{ localStorage.removeItem(LICENSE_KEY); licenseMsg.textContent=""; statusPill.textContent="Unlicensed"; statusPill.className="status-pill bad"; $("licenseCard").classList.remove("hidden"); lockAll(true); };
