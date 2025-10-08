@@ -36,6 +36,7 @@
     transition: all 0.4s ease;
   }
 
+  /* Default placeholder look */
   #charImg.default-placeholder {
     opacity: 0.5;
     filter: grayscale(40%) brightness(0.9);
@@ -77,70 +78,75 @@
   </div>
 
   <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-  console.log("🔥 Overlay script loaded — initializing Firebase...");
+    console.log("🔥 Overlay script loaded — initializing Firebase...");
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
-    authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
-    databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
-    projectId: "marvel-rivals-overlay-7f867",
-    storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
-    messagingSenderId: "1078364810175",
-    appId: "1:1078364810175:web:fac410007b70b65e348f0a"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
+      authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
+      databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+      projectId: "marvel-rivals-overlay-7f867",
+      storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
+      messagingSenderId: "1078364810175",
+      appId: "1:1078364810175:web:fac410007b70b65e348f0a"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  console.log("✅ Firebase app initialized");
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    console.log("✅ Firebase initialized");
 
-  const db = getDatabase(app);
-  console.log("✅ Database connection ready");
+    const params = new URLSearchParams(location.search);
+    const channelId = params.get("channel") || "demo";
+    console.log("🛰️ Listening for hero updates on channel:", channelId);
 
-  const params = new URLSearchParams(location.search);
-  const channelId = params.get("channel") || "demo";
-  console.log("🛰️ Channel ID detected:", channelId);
+    const charImgEl = document.getElementById("charImg");
+    const donorTextEl = document.getElementById("donorText");
 
-  const charImgEl = document.getElementById("charImg");
-  const donorTextEl = document.getElementById("donorText");
+    const characters = {
+      "Adam Warlock": "Adam Warlock.png", "Angela": "Angela.png", "Black Panther": "Black Panther.png",
+      "Black Widow": "Black Widow.png", "Blade": "Blade.png", "Captain America": "Captain America.png",
+      "Cloak & Dagger": "Cloak & Dagger.png", "Doctor Strange": "Doctor Strange.png", "Emma Frost": "Emma Frost.png",
+      "Groot": "Groot.png", "Hawkeye": "Hawkeye.png", "Hela": "Hela.png", "Hulk": "Hulk.png",
+      "Human Torch": "Human Torch.png", "Invisible Woman": "Invisible Woman.png", "Iron Fist": "Iron Fist.png",
+      "Iron Man": "Iron Man.png", "Jeff the Land Shark": "Jeff the Land Shark.png", "Loki": "Loki.png",
+      "Luna Snow": "Luna Snow.png", "Magik": "Magik.png", "Magneto": "Magneto.png", "Mantis": "Mantis.png",
+      "Mister Fantastic": "Mister Fantastic.png", "Moon Knight": "Moon Knight.png", "Namor": "Namor.png",
+      "Peni Parker": "Peni Parker.png", "Phoenix": "Phoenix.png", "Psylocke": "Psylocke.png",
+      "The Punisher": "The Punisher.png", "The Thing": "The Thing.png", "Rocket Raccoon": "Rocket Raccoon.png",
+      "Scarlet Witch": "Scarlet Witch.png", "Squirrel Girl": "Squirrel Girl.png", "Spider-Man": "Spider-Man.png",
+      "Star-Lord": "Star-Lord.png", "Storm": "Storm.png", "Thor": "Thor.png", "Ultron": "Ultron.png",
+      "Venom": "Venom.png", "Winter Soldier": "Winter Soldier.png", "Wolverine": "Wolverine.png"
+    };
 
-  const characters = {
-    "Adam Warlock": "Adam Warlock.png", "Angela": "Angela.png", "Black Panther": "Black Panther.png",
-    "Black Widow": "Black Widow.png", "Blade": "Blade.png", "Captain America": "Captain America.png",
-    "Cloak & Dagger": "Cloak & Dagger.png", "Doctor Strange": "Doctor Strange.png", "Emma Frost": "Emma Frost.png",
-    "Groot": "Groot.png", "Hawkeye": "Hawkeye.png", "Hela": "Hela.png", "Hulk": "Hulk.png",
-    "Human Torch": "Human Torch.png", "Invisible Woman": "Invisible Woman.png", "Iron Fist": "Iron Fist.png",
-    "Iron Man": "Iron Man.png", "Jeff the Land Shark": "Jeff the Land Shark.png", "Loki": "Loki.png",
-    "Luna Snow": "Luna Snow.png", "Magik": "Magik.png", "Magneto": "Magneto.png", "Mantis": "Mantis.png",
-    "Mister Fantastic": "Mister Fantastic.png", "Moon Knight": "Moon Knight.png", "Namor": "Namor.png",
-    "Peni Parker": "Peni Parker.png", "Phoenix": "Phoenix.png", "Psylocke": "Psylocke.png",
-    "The Punisher": "The Punisher.png", "The Thing": "The Thing.png", "Rocket Raccoon": "Rocket Raccoon.png",
-    "Scarlet Witch": "Scarlet Witch.png", "Squirrel Girl": "Squirrel Girl.png", "Spider-Man": "Spider-Man.png",
-    "Star-Lord": "Star-Lord.png", "Storm": "Storm.png", "Thor": "Thor.png", "Ultron": "Ultron.png",
-    "Venom": "Venom.png", "Winter Soldier": "Winter Soldier.png", "Wolverine": "Wolverine.png"
-  };
+    // Watch Firebase path for live hero updates
+    const path = `/channels/${channelId}/current`;
+    console.log("👀 Subscribing to:", path);
 
-  console.log("👀 Setting up listener for /channels/" + channelId + "/current");
+    onValue(ref(db, path), (snap) => {
+      const cur = snap.val();
+      console.log("📡 Data received:", cur);
 
-  onValue(ref(db, `/channels/${channelId}/current`), (snap) => {
-    console.log("📡 Firebase snapshot received:", snap.val());
-    const cur = snap.val();
+      if (!cur || !cur.hero) {
+        console.warn("⚠️ No hero found. Showing default image.");
+        charImgEl.src = "images/pickahero.png";
+        charImgEl.classList.add("default-placeholder");
+        donorTextEl.textContent = "Pick a Hero!";
+        return;
+      }
 
-    if (!cur || !cur.hero) {
-      charImgEl.src = "images/pickahero.png";
-      charImgEl.classList.add("default-placeholder");
-      donorTextEl.textContent = "Pick a Hero!";
-      return;
-    }
+      const heroName = cur.hero.trim();
+      const donorName = cur.donor || "";
+      const imageName = characters[heroName] || "pickahero.png";
 
-    const heroName = cur.hero.trim();
-    const donorName = cur.donor || "";
-    const imageName = characters[heroName] || "pickahero.png";
-
-    charImgEl.classList.remove("default-placeholder");
-    charImgEl.src = `images/${imageName}`;
-    donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
-    console.log(`✅ Displayed hero: ${heroName} ${donorName ? `(requested by ${donorName})` : ""}`);
-  });
-</script>
+      charImgEl.classList.remove("default-placeholder");
+      charImgEl.src = `images/${imageName}`;
+      donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
+      console.log(`✅ Displaying hero: ${heroName} ${donorName ? `(requested by ${donorName})` : ""}`);
+    }, (error) => {
+      console.error("❌ Firebase listener error:", error);
+    });
+  </script>
+</body>
+</html>
