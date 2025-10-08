@@ -74,6 +74,30 @@
       <div id="donorText"></div>
     </div>
   </div>
+// 🧠 Listen for updates from Firebase
+console.log("Connecting to Firebase for overlay...");
+
+onValue(ref(db, `/channels/${channelId}/current`), (snap) => {
+  const cur = snap.val();
+  console.log("Firebase snapshot received:", cur);
+
+  if (!cur || !cur.hero) {
+    console.log("No current hero — showing default image.");
+    charImgEl.src = "images/pickahero.png";
+    charImgEl.classList.add("default-placeholder");
+    donorTextEl.textContent = "Pick a Hero!";
+    return;
+  }
+
+  const heroName = cur.hero.trim();
+  const donorName = cur.donor || "";
+  const imageName = characters[heroName] || "pickahero.png";
+
+  console.log("Now showing:", heroName, "by", donorName);
+  charImgEl.classList.remove("default-placeholder");
+  charImgEl.src = `images/${imageName}`;
+  donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
+});
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
