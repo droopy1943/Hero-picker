@@ -36,9 +36,8 @@
     transition: all 0.4s ease;
   }
 
-  /* Fallback “Pick a Hero!” image look */
   #charImg.default-placeholder {
-    opacity: 0.5; /* slightly dimmed */
+    opacity: 0.5;
     filter: grayscale(40%) brightness(0.9);
     transform: scale(0.85);
   }
@@ -67,7 +66,6 @@
   }
 </style>
 </head>
-
 <body>
   <div class="overlay">
     <div class="char-wrapper">
@@ -77,88 +75,11 @@
     </div>
   </div>
 
-  <script>
-    const characters = {
-      "Adam Warlock": "Adam Warlock.png",
-      "Angela": "Angela.png",
-      "Black Panther": "Black Panther.png",
-      "Black Widow": "Black Widow.png",
-      "Blade": "Blade.png",
-      "Captain America": "Captain America.png",
-      "Cloak & Dagger": "Cloak & Dagger.png",
-      "Doctor Strange": "Doctor Strange.png",
-      "Emma Frost": "Emma Frost.png",
-      "Groot": "Groot.png",
-      "Hawkeye": "Hawkeye.png",
-      "Hela": "Hela.png",
-      "Hulk": "Hulk.png",
-      "Human Torch": "Human Torch.png",
-      "Invisible Woman": "Invisible Woman.png",
-      "Iron Fist": "Iron Fist.png",
-      "Iron Man": "Iron Man.png",
-      "Jeff the Land Shark": "Jeff the Land Shark.png",
-      "Loki": "Loki.png",
-      "Luna Snow": "Luna Snow.png",
-      "Magik": "Magik.png",
-      "Magneto": "Magneto.png",
-      "Mantis": "Mantis.png",
-      "Mister Fantastic": "Mister Fantastic.png",
-      "Moon Knight": "Moon Knight.png",
-      "Namor": "Namor.png",
-      "Peni Parker": "Peni Parker.png",
-      "Phoenix": "Phoenix.png",
-      "Psylocke": "Psylocke.png",
-      "The Punisher": "The Punisher.png",
-      "The Thing": "The Thing.png",
-      "Rocket Raccoon": "Rocket Raccoon.png",
-      "Scarlet Witch": "Scarlet Witch.png",
-      "Squirrel Girl": "Squirrel Girl.png",
-      "Spider-Man": "Spider-Man.png",
-      "Star-Lord": "Star-Lord.png",
-      "Storm": "Storm.png",
-      "Thor": "Thor.png",
-      "Ultron": "Ultron.png",
-      "Venom": "Venom.png",
-      "Winter Soldier": "Winter Soldier.png",
-      "Wolverine": "Wolverine.png"
-    };
-
-    const charImgEl = document.getElementById("charImg");
-    const donorTextEl = document.getElementById("donorText");
-
-    function newDonation(heroName, donorName = "") {
-  if (!heroName) return;
-
-  const lowerHero = heroName.trim().toLowerCase();
-  const heroKey = Object.keys(characters).find(
-    key => key.toLowerCase() === lowerHero
-  );
-
-  if (heroKey) {
-    let fileName = characters[heroKey];
-    if (fileName[0] === fileName[0].toLowerCase()) {
-      fileName = fileName[0].toUpperCase() + fileName.slice(1);
-    }
-
-    console.log("Loading image:", `images/${fileName}`);
-    charImgEl.src = `images/${fileName}`;
-    charImgEl.style.display = "block";
-    donorTextEl.textContent = donorName ? `Requested by ${donorName}` : "";
-  } else {
-    console.warn("Hero not found:", heroName, "→ showing pickahero.png fallback");
-    charImgEl.src = "images/pickahero.png";  // <--- new fallback image
-    charImgEl.style.display = "block";
-    donorTextEl.textContent = "";
-  }
-}
-    window.newDonation = newDonation;
-  </script>
-
-  <!-- Firebase connection -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
+    // --- Firebase config ---
     const firebaseConfig = {
       apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
       authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
@@ -178,21 +99,9 @@
     const charImgEl = document.getElementById("charImg");
     const donorTextEl = document.getElementById("donorText");
 
-    onValue(ref(db, `/channels/${channelId}/current`), (snap) => {
-      const cur = snap.val();
-
-      if (!cur || !cur.hero) {
-        console.log("No current hero — showing default image.");
-        charImgEl.src = "images/pickahero.png";
-        charImgEl.classList.add("default-placeholder");
-        donorTextEl.textContent = "Pick a Hero!";
-        return;
-      }
-
-      console.log("Now showing:", cur.hero, "by", cur.donor || "Anonymous");
-      charImgEl.classList.remove("default-placeholder");
-      newDonation(cur.hero.trim(), cur.donor);
-    });
-  </script>
-</body>
-</html>
+    const characters = {
+      "Adam Warlock": "Adam Warlock.png", "Angela": "Angela.png", "Black Panther": "Black Panther.png",
+      "Black Widow": "Black Widow.png", "Blade": "Blade.png", "Captain America": "Captain America.png",
+      "Cloak & Dagger": "Cloak & Dagger.png", "Doctor Strange": "Doctor Strange.png", "Emma Frost": "Emma Frost.png",
+      "Groot": "Groot.png", "Hawkeye": "Hawkeye.png", "Hela": "Hela.png", "Hulk": "Hulk.png",
+      "Human Torch": "Human T
