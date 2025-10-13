@@ -200,10 +200,12 @@
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
   <script type="module">
-    document.addEventListener("DOMContentLoaded", async () => {
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, onValue, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { getDatabase, ref, onValue, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
+  document.addEventListener("DOMContentLoaded", async () => {
+
 
     // --- Firebase init ---
     const firebaseConfig = { apiKey:"AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE", authDomain:"marvel-rivals-overlay-7f867.firebaseapp.com", databaseURL:"https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com", projectId:"marvel-rivals-overlay-7f867", storageBucket:"marvel-rivals-overlay-7f867.appspot.com", messagingSenderId:"1078364810175", appId:"1:1078364810175:web:fac410007b70b65e348f0a" };
