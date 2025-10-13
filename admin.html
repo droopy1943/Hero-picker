@@ -2,111 +2,83 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Rivals — License Admin</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rivals — License Admin</title>
 <style>
-  :root{ --bg:#0b0b0f; --card:#11121a; --muted:#9aa0aa; --text:#f5f7fa; --accent:#e62429; --link:#61dafb; --good:#2ecc71; --warn:#f39c12; --border:#1b1d29; }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-  .container{max-width:980px;margin:28px auto;padding:0 16px}
-  h1{margin:0 0 16px;font-size:28px;letter-spacing:.3px;display:flex;justify-content:space-between;align-items:center}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 4px 24px rgba(0,0,0,.25)}
-  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-  label{display:block;font-size:14px;color:var(--muted);margin-bottom:6px}
-  input[type="text"],input[type="number"],input[type="password"],select{
-    width:340px;max-width:100%;background:#0f1118;color:var(--text);border:1px solid #2a2e3e;border-radius:8px;padding:10px 12px;outline:none
+  body {
+    background: #0b0b0f; color: #e6f3ff; font-family: system-ui, sans-serif; margin: 0;
+    display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 30px;
   }
-  .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600;letter-spacing:.2px}
-  .btn.secondary{background:#2a2e3e}
-  .btn.good{background:var(--good)}
-  .btn.warn{background:var(--warn);color:#1a1000}
-  .btn:hover{opacity:.95}
-  .muted{color:var(--muted);font-size:13px}
-  .pill{background:#18202f;border:1px solid #273149;padding:6px 10px;border-radius:999px;color:#cbd5e1;font-size:12px}
-  .divider{height:1px;background:var(--border);margin:12px 0;border:none}
-  ul{list-style:none;padding:0;margin:10px 0 0}
-  li{background:#0f1118;border:1px solid #2a2e3e;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
-  .krow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .kmeta{display:flex;gap:10px;flex-wrap:wrap}
-  .badge{padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid #2a2e3e;background:#111626}
-  .badge.good{border-color:#1f6034;background:#0f2318;color:#a7f3c4}
-  .badge.bad{border-color:#51222a;background:#201216;color:#f8c1c7}
-  .toast{position:fixed;right:16px;bottom:16px;background:#1a1f2b;color:#e6f3ff;border:1px solid #2b3448;padding:10px 14px;border-radius:10px;box-shadow:0 6px 26px rgba(0,0,0,.35);opacity:0;transform:translateY(8px);transition:all .25s ease;z-index:50}
-  .toast.show{opacity:1;transform:translateY(0)}
-  code{background:#0f1118;border:1px solid #2a2e3e;padding:4px 6px;border-radius:6px}
-  .right{margin-left:auto;display:flex;gap:8px}
-  .watermark{ text-align:right; font-size:12px; color:#cbd5e1; line-height:1.3; margin-top:8px; }
+  .container { width: 860px; background: #11121a; border-radius: 16px; padding: 24px; box-shadow: 0 8px 40px rgba(0,0,0,.4); }
+  h1 { font-size: 26px; margin-top: 0; display:flex; justify-content:space-between; align-items:center; }
+  .card { background:#151721; border:1px solid #22263a; border-radius:14px; padding:16px 20px; margin-bottom:20px; }
+  input[type=text] { background:#0e1018; color:#fff; border:1px solid #2a2e3e; border-radius:8px; padding:10px; width:100%; }
+  label { font-size:14px; color:#9aa0aa; }
+  button { cursor:pointer; border:none; border-radius:8px; padding:10px 16px; font-weight:600; transition:all .15s ease; }
+  .btn-primary { background:#e62429; color:#fff; }
+  .btn-primary:hover { opacity:.9; }
+  .btn-secondary { background:#2a2e3e; color:#fff; }
+  .btn-warning { background:#f39c12; color:#111; }
+  .btn-copy { background:#3b3f52; color:#fff; }
+  .row { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  .license-item { display:flex; justify-content:space-between; align-items:center; background:#0f1118; border:1px solid #2a2e3e; border-radius:10px; padding:10px 12px; margin-top:8px; animation:fadeIn .3s ease; }
+  @keyframes fadeIn { from {opacity:0; transform:translateY(5px);} to {opacity:1; transform:translateY(0);} }
+  .pill { padding:4px 10px; border-radius:999px; font-size:12px; }
+  .pill.active { background:#2ecc71; color:#000; }
+  .pill.inactive { background:#e62429; color:#fff; }
+  .muted { color:#9aa0aa; font-size:13px; }
 </style>
 </head>
 <body>
   <div class="container">
     <h1>
       Rivals — License Admin
-      <span class="pill">Local admin (client-side)</span>
+      <span class="pill active">Local admin (client-side)</span>
     </h1>
 
-    <!-- Create license -->
     <div class="card">
-      <div class="pill">Create License</div>
-      <p class="muted" style="margin:8px 0 12px;">Generate or enter a key and assign it to a channel (their ID/username). Toggle “Active” to enable/disable.</p>
+      <h3>Create License</h3>
       <div class="row">
-        <div>
+        <div style="flex:1;">
           <label>Channel ID</label>
-          <input id="channelInput" type="text" placeholder="e.g., Droopy" />
+          <input type="text" id="channelId" placeholder="e.g. Droopy">
         </div>
-        <div>
+        <div style="flex:1;">
           <label>License Key</label>
-          <div class="row">
-            <input id="keyInput" type="text" placeholder="e.g., RIV-9A3K7P" />
-            <button class="btn secondary" id="genBtn" title="Generate random key">Generate</button>
-          </div>
+          <input type="text" id="licenseKey" placeholder="Auto-generate or enter manually">
         </div>
-        <div>
-          <label>Status</label>
-          <div class="row" style="align-items:center;">
-            <input id="activeChk" type="checkbox" checked /> <span class="muted">Active</span>
-          </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:25px;">
+          <input type="checkbox" id="isActive" checked>
+          <label for="isActive" style="margin:0;">Active</label>
         </div>
       </div>
       <div class="row" style="margin-top:10px;">
-        <button class="btn" id="createBtn">Create License</button>
+        <button class="btn-secondary" id="generateKey">Generate</button>
+        <button class="btn-primary" id="createLicense">Create License</button>
         <span id="createMsg" class="muted"></span>
       </div>
     </div>
 
-    <!-- Browse / manage -->
     <div class="card">
-      <div class="pill">Manage Licenses</div>
-      <div class="row" style="margin-top:10px;">
-        <div>
+      <h3>Manage Licenses</h3>
+      <div class="row">
+        <div style="flex:1;">
           <label>Channel to view</label>
-          <div class="row">
-            <input id="viewChannel" type="text" placeholder="e.g., Droopy" />
-            <button class="btn secondary" id="loadBtn">Load</button>
-          </div>
+          <input type="text" id="viewChannel" placeholder="e.g. Droopy">
         </div>
-        <div class="right">
-          <button class="btn secondary" id="refreshBtn">Refresh</button>
-        </div>
+        <button class="btn-secondary" id="loadLicenses" style="margin-top:24px;">Load</button>
+        <button class="btn-secondary" id="refreshList" style="margin-top:24px;">Refresh</button>
       </div>
-      <hr class="divider" />
-      <ul id="list"></ul>
-      <div id="empty" class="muted" style="display:none;">No licenses found for this channel.</div>
+      <div id="licenseList" style="margin-top:14px;"></div>
     </div>
-
-    <div class="watermark">v1.0 — Admin utility (private)</div>
+    <div class="muted" style="text-align:right;">v1.1 — Admin utility (private)</div>
   </div>
 
-  <div class="toast" id="toast">Saved</div>
-
-  <!-- Firebase + logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, set, get, remove, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import { getDatabase, ref, get, set, remove, update } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-    // --- CONFIG (same project you’re using everywhere) ---
-    const firebaseConfig = {
+    const app = initializeApp({
       apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
       authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
       databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
@@ -114,154 +86,79 @@
       storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
       messagingSenderId: "1078364810175",
       appId: "1:1078364810175:web:fac410007b70b65e348f0a"
+    });
+    const db = getDatabase(app);
+
+    const $ = id => document.getElementById(id);
+    const fmt = t => new Date(t).toLocaleString();
+
+    $("generateKey").onclick = () => {
+      $("licenseKey").value = "RIV-" + Math.random().toString(36).substring(2,10).toUpperCase();
     };
 
-    // --- INIT ---
-    const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
-    const auth = getAuth(app);
-    await signInAnonymously(auth).catch(()=>{});
+    $("createLicense").onclick = async () => {
+      const ch = $("channelId").value.trim();
+      const key = $("licenseKey").value.trim();
+      const active = $("isActive").checked;
+      if(!ch || !key){ $("createMsg").textContent="⚠️ Missing fields."; return; }
 
-    // --- ELs ---
-    const $ = (id)=>document.getElementById(id);
-    const toast = $("toast");
-    const channelInput = $("channelInput");
-    const keyInput = $("keyInput");
-    const activeChk = $("activeChk");
-    const createBtn = $("createBtn");
-    const genBtn = $("genBtn");
-    const createMsg = $("createMsg");
-    const viewChannel = $("viewChannel");
-    const loadBtn = $("loadBtn");
-    const refreshBtn = $("refreshBtn");
-    const listEl = $("list");
-    const emptyEl = $("empty");
+      const refPath = ref(db, `channels/${ch}/licenses/${key}`);
+      const snap = await get(refPath);
+      if(snap.exists()){ $("createMsg").textContent="⚠️ License already exists."; return; }
 
-    // --- Helpers ---
-    function showToast(msg){
-      toast.textContent = msg;
-      toast.classList.add("show");
-      setTimeout(()=>toast.classList.remove("show"), 1400);
-    }
-    const escapeHTML = (s)=> (s||"").replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+      const data = {
+        active,
+        assignedTo: ch,
+        since: new Date().toISOString()
+      };
+      await set(refPath, data);
+      $("createMsg").textContent="✓ License created.";
+      setTimeout(()=> $("createMsg").textContent="", 2000);
+      loadLicenses(ch);
+    };
 
-    function generateKey() {
-      const seg = (n)=> Array.from(crypto.getRandomValues(new Uint8Array(n))).map(b=>(b%36).toString(36)).join("").toUpperCase();
-      return `RIV-${seg(4)}${seg(4)}`; // e.g., RIV-9A3K7PZQ
-    }
-
-    async function createLicense() {
-      const ch = (channelInput.value||"").trim();
-      let key = (keyInput.value||"").trim();
-      const active = !!activeChk.checked;
-
-      if(!ch){ createMsg.textContent="Channel ID required."; return; }
-      if(!key){ key = generateKey(); keyInput.value = key; }
-
-      const path = `/channels/${ch}/licenses/${key}`;
-      const payload = { active, assignedTo: ch, createdAt: Date.now() };
-
-      try{
-        await set(ref(db, path), payload);
-        createMsg.textContent = "✔ License created.";
-        showToast("License saved");
-        // If we’re looking at this channel, refresh list
-        if ((viewChannel.value||"").trim().toLowerCase() === ch.toLowerCase()) {
-          await loadLicenses();
-        }
-      }catch(e){
-        console.error(e);
-        createMsg.textContent = "⚠️ Failed to create (check DB rules).";
-        showToast("Failed to save");
+    async function loadLicenses(ch){
+      if(!ch) return;
+      const refPath = ref(db, `channels/${ch}/licenses`);
+      const snap = await get(refPath);
+      const div = $("licenseList");
+      div.innerHTML="";
+      if(!snap.exists()){ div.textContent="No licenses found."; return; }
+      const data = snap.val();
+      for(const [key,val] of Object.entries(data)){
+        const item=document.createElement("div");
+        item.className="license-item";
+        item.innerHTML=`
+          <div>
+            <strong>${ch}</strong> 
+            <span class="pill ${val.active?'active':'inactive'}">${val.active?'Active':'Inactive'}</span> 
+            <span class="muted">Key: ${key}</span> 
+            <span class="muted">Assigned: ${val.assignedTo||'—'}</span> 
+            <span class="muted">Since: ${val.since?fmt(val.since):'—'}</span>
+          </div>
+          <div class="row">
+            <button class="btn-copy" onclick="navigator.clipboard.writeText('${key}')">Copy</button>
+            <button class="btn-warning" onclick="toggleActive('${ch}','${key}',${!val.active})">${val.active?'Deactivate':'Activate'}</button>
+            <button class="btn-warning" onclick="deleteLicense('${ch}','${key}')">Delete</button>
+          </div>
+        `;
+        div.appendChild(item);
       }
     }
 
-    function renderList(channel, data){
-      listEl.innerHTML = "";
-      const licenses = data ? Object.entries(data) : [];
-      if (!licenses.length){ emptyEl.style.display="block"; return; }
-      emptyEl.style.display="none";
+    window.toggleActive = async (ch,key,newState)=>{
+      await update(ref(db, `channels/${ch}/licenses/${key}`), { active:newState });
+      loadLicenses(ch);
+    };
 
-      licenses.forEach(([key, val])=>{
-        const li = document.createElement("li");
-        const active = !!val?.active;
-        const meta = `
-          <span class="badge${active?' good':''}">${active?'Active':'Inactive'}</span>
-          <span class="badge">Key: <code>${escapeHTML(key)}</code></span>
-          <span class="badge">Assigned: ${escapeHTML(val?.assignedTo||channel)}</span>
-          <span class="badge">Since: ${val?.createdAt ? new Date(val.createdAt).toLocaleString() : '—'}</span>
-        `;
-        li.innerHTML = `
-          <div class="krow">
-            <strong>${escapeHTML(channel)}</strong>
-            <div class="kmeta">${meta}</div>
-          </div>
-          <div class="right">
-            <button class="btn secondary" data-copy="${escapeHTML(key)}">Copy</button>
-            <button class="btn ${active?'warn':'good'}" data-toggle="${escapeHTML(key)}">${active?'Deactivate':'Activate'}</button>
-            <button class="btn warn" data-del="${escapeHTML(key)}">Delete</button>
-          </div>
-        `;
+    window.deleteLicense = async (ch,key)=>{
+      if(!confirm("Delete this license?")) return;
+      await remove(ref(db, `channels/${ch}/licenses/${key}`));
+      loadLicenses(ch);
+    };
 
-        // Copy
-        li.querySelector('[data-copy]').onclick = async (e)=>{
-          try{
-            await navigator.clipboard.writeText(key);
-            showToast("Key copied");
-          }catch{}
-        };
-        // Toggle
-        li.querySelector('[data-toggle]').onclick = async ()=>{
-          try{
-            await update(ref(db, `/channels/${channel}/licenses/${key}`), { active: !active });
-            showToast(!active ? "Activated" : "Deactivated");
-            await loadLicenses();
-          }catch(e){ console.error(e); showToast("Failed to toggle"); }
-        };
-        // Delete
-        li.querySelector('[data-del]').onclick = async ()=>{
-          if(!confirm(`Delete key ${key}?`)) return;
-          try{
-            await remove(ref(db, `/channels/${channel}/licenses/${key}`));
-            showToast("Deleted");
-            await loadLicenses();
-          }catch(e){ console.error(e); showToast("Failed to delete"); }
-        };
-
-        listEl.appendChild(li);
-      });
-    }
-
-    async function loadLicenses(){
-      const ch = (viewChannel.value||"").trim();
-      if(!ch){ listEl.innerHTML=""; emptyEl.style.display="block"; return; }
-      try{
-        const snap = await get(ref(db, `/channels/${ch}/licenses`));
-        renderList(ch, snap.val()||null);
-      }catch(e){
-        console.error(e);
-        listEl.innerHTML="";
-        emptyEl.style.display="block";
-        showToast("Failed to load (rules?)");
-      }
-    }
-
-    // --- Wire up ---
-    genBtn.onclick = ()=> { keyInput.value = generateKey(); };
-    createBtn.onclick = createLicense;
-    loadBtn.onclick = loadLicenses;
-    refreshBtn.onclick = loadLicenses;
-
-    // Quality-of-life: if you type a channel above, mirror into “view”
-    channelInput.addEventListener("change", ()=>{ if(!viewChannel.value) viewChannel.value = channelInput.value; });
-
-    // Optional: prefill viewChannel from URL ?channel=
-    const params = new URLSearchParams(location.search);
-    const pre = params.get("channel"); if(pre){ viewChannel.value = pre; }
-
-    // Initial blank state
-    emptyEl.style.display="block";
+    $("loadLicenses").onclick = ()=> loadLicenses($("viewChannel").value.trim());
+    $("refreshList").onclick = ()=> loadLicenses($("viewChannel").value.trim());
   </script>
 </body>
 </html>
-
