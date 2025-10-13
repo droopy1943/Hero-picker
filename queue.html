@@ -413,7 +413,7 @@
           const name=m.name||"Anonymous";
           const amount=Number(m.amount||0);
           const note=(m.message||"")+""; 
-          const match=note.match(/I\s*want\s*to\s*request\s*\[([^\]]+)\]/i);
+          const match = note.match(/\b(?:request|want to request)?\s*[\[\{(]?([a-zA-Z\s]+)[\]\})]?/i);
           if(!match) continue;
           const hero=match[1].trim();
           await push(qRef(), { hero, donor:name, amount, ts:Date.now() });
