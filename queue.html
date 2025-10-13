@@ -200,6 +200,7 @@
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
   <script type="module">
+    document.addEventListener("DOMContentLoaded", async () => {
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getDatabase, ref, onValue, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -428,6 +429,7 @@
 
     // Initial subscribe
     resubscribeQueue();
+      }); // closes the DOMContentLoaded event
   </script>
 </body>
 </html>
