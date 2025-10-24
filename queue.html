@@ -510,5 +510,39 @@
     // Initial subscribe
     resubscribeQueue();
   </script>
+  <!-- Firebase listener (append-only) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
+<script>
+  // 1) Init Firebase (your config)
+  const firebaseConfig = {
+    apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
+    authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
+    databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+    projectId: "marvel-rivals-overlay-7f867",
+    storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
+    messagingSenderId: "1078364810175",
+    appId: "1:1078364810175:web:fac410007b70b65e348f0a"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // 2) get channel from ?channel=... or default to "droopy"
+  function getParam(name){
+    const u = new URLSearchParams(location.search);
+    return u.get(name);
+  }
+  const channel = getParam('channel') || 'droopy';
+
+  // 3) live-subscribe to /current and drive your existing newDonation()
+  const curRef = db.ref(`/channels/${channel}/current`);
+  curRef.on('value', (snap) => {
+    const val = snap.val();
+    if (!val || !val.hero) return;
+    // Your existing function signature: newDonation(donor, amount, heroName)
+    newDonation(val.donor || "", val.amount || "", val.hero);
+  });
+</script>
+
 </body>
 </html>
