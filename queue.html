@@ -228,7 +228,7 @@
     const CFG_KEY="mr_cfg", PKR_KEY="mr_picker";
 
     function showToast(msg){ toast.textContent=msg; toast.classList.add("show"); setTimeout(()=>toast.classList.remove("show"),1500); }
-    function sanitize(s){return (s||"").replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}
+    function sanitize(s){return (s||"").replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]) )}
     function log(msg){ $("log").textContent=`[${new Date().toLocaleTimeString()}] ${msg}\n`+($("log").textContent||""); }
 
     // Tooltip
@@ -278,7 +278,7 @@
       if(!ss.exists()) await set(ref(db, `/channels/${ch}/settings`), {});
     }
 
-    // STRICT license verify
+    // STRICT license verify (unchanged)
     async function verifyLicense(manual=false){
       const key=licenseKeyInput.value.trim(), ch=licenseChannelInput.value.trim();
       if(!key||!ch){
@@ -330,6 +330,7 @@
       setOverlayUrl(); setViewerLink();
     })();
 
+    // ---- Auto-saves (unchanged) ----
     function debounce(fn,ms=600){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; }
 
     const autoSavePicker=debounce(()=>{
@@ -359,18 +360,19 @@
     $("savePickerSetup").onclick=()=>{ if(isLicensed()) autoSavePicker(); };
     $("saveSetup").onclick=()=>{ if(isLicensed()) autoSaveCfg(); };
 
-    $("copyViewer").onclick=async()=>{ try{await navigator.clipboard.writeText($("viewerLink").textContent); $("copyViewer").textContent="Copied!"; setTimeout(()=>$("copyViewer").textContent="Copy",900);}catch{} };
-    $("copyOverlay").onclick=async()=>{ try{await navigator.clipboard.writeText($("overlayUrl").textContent); $("copyOverlay").textContent="Copied!"; setTimeout(()=>$("copyOverlay").textContent="Copy",900);}catch{} };
+    $("copyViewer").onclick=async()=>{ try{await navigator.clipboard.writeText($("viewerLink").textContent); $("copyViewer").textContent="Copied!"; setTimeout(()=>{$("copyViewer").textContent="Copy"},900);}catch{} };
+    $("copyOverlay").onclick=async()=>{ try{await navigator.clipboard.writeText($("overlayUrl").textContent); $("copyOverlay").textContent="Copied!"; setTimeout(()=>{$("copyOverlay").textContent="Copy"},900);}catch{} };
 
     $("toggleSetup").onclick=()=>{ const hide=!setupBody.classList.contains("hidden"); setupBody.classList.toggle("hidden",hide); $("toggleSetup").textContent=hide?"Expand":"Collapse"; };
     $("clearPickerSetup").onclick=()=>{ localStorage.removeItem(PKR_KEY); slUserInput.value=""; slAmountInput.value=""; setViewerLink(); pickerSavedMsg.textContent=""; showToast("🧹 Picker setup cleared"); };
 
     // =========================
-    // 🔽 ADDED: auto-promote state
+    // STATE for auto-promote ONLY when queue goes empty->non-empty
     // =========================
     let currentState = null;
     let latestQueueItems = [];
     let autoPromoteBusy = false;
+    let prevQueueCount = 0;  // <-- NEW
 
     // Keep a live copy of current
     onValue(curRef(), (snap) => {
@@ -391,22 +393,21 @@
 
       autoPromoteBusy = true;
       try {
-        const first = latestQueueItems[0]; // {key, hero, donor, amount, ts}
+        const first = latestQueueItems[0];
+        // Show on overlay but KEEP it in the queue
         await set(curRef(), {
           hero: first.hero,
           donor: first.donor || "",
           amount: first.amount || "",
           ts: first.ts || Date.now()
         });
-        await remove(ref(db, `/channels/${cid()}/queue/${first.key}`));
-        log(`Auto-sent to overlay: ${first.hero}${first.donor ? ` by ${first.donor}` : ""}`);
+        log(`Auto-shown on overlay (kept in queue): ${first.hero}${first.donor ? ` by ${first.donor}` : ""}`);
       } catch (e) {
         console.error("autoPromoteIfIdle error:", e);
       } finally {
         autoPromoteBusy = false;
       }
     }
-    // =========================
 
     // ---- Queue subscribe & render ----
     let unsub=null;
@@ -416,10 +417,17 @@
         const obj=snap.val()||{};
         const items=Object.entries(obj).map(([key,val])=>({key, ...(val||{})}));
         items.sort((a,b)=>(a.ts||0)-(b.ts||0));
-        // 🔽 ADDED: store + attempt auto-promote
+
+        // store items
         latestQueueItems = items;
         renderQueue(items);
-        autoPromoteIfIdle();
+
+        // Only auto-show when queue transitions from empty → non-empty
+        const justBecameNonEmpty = (prevQueueCount === 0 && items.length > 0); // <-- NEW
+        if (justBecameNonEmpty) {
+          autoPromoteIfIdle();
+        }
+        prevQueueCount = items.length; // <-- NEW
       });
       unsub=()=>off();
       liveStatus.textContent=`Listening @ /channels/${cid()}/queue`;
@@ -493,11 +501,11 @@
       });
     };
 
-    // Debug panel
+    // Debug panel (unchanged)
     $("statusCard").querySelector(".pill").addEventListener("click",(e)=>{ if(e.shiftKey){ $("debugPanel").classList.toggle("hidden"); updateDbg(); }});
     $("dbgRefresh").onclick=()=>resubscribeQueue();
     $("dbgClearLS").onclick=()=>{ localStorage.removeItem(CFG_KEY); localStorage.removeItem(PKR_KEY); localStorage.removeItem(LICENSE_KEY); showToast("Local storage cleared"); location.reload(); };
-    function updateDbg(){ $("dbgInfo").textContent=`Path: /channels/${cid()}/*  | Licensed: ${isLicensed()}`; }
+    function updateDbg(){ $("dbgInfo").textContent=`Path: /channels/${cid()}/ *  | Licensed: ${isLicensed()}`; }
 
     // Initial subscribe
     resubscribeQueue();
