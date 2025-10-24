@@ -15,7 +15,6 @@
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 4px 24px rgba(0,0,0,.25)}
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   label{display:block;font-size:14px;color:var(--muted);margin-bottom:6px}
-  /* keep visuals identical; include select for dropdown */
   input[type="text"],input[type="password"],input[type="number"],select{ width:360px;max-width:100%;background:#0f1118;color:var(--text);border:1px solid #2a2e3e;border-radius:8px;padding:10px 12px;outline:none }
   code{background:#0f1118;border:1px solid #2a2e3e;padding:6px 8px;border-radius:8px}
   .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600;letter-spacing:.2px}
@@ -269,7 +268,6 @@
 
     // Ensure paths exist (queue/current/settings)
     async function ensurePaths(ch){
-      // create empty objects only if missing; safe defaults
       const [qs, cs, ss] = await Promise.all([
         get(ref(db, `/channels/${ch}/queue`)),
         get(ref(db, `/channels/${ch}/current`)),
@@ -280,7 +278,7 @@
       if(!ss.exists()) await set(ref(db, `/channels/${ch}/settings`), {});
     }
 
-    // STRICT license verify (no auto-create; must exist & be active/valid). Silent success (no alert).
+    // STRICT license verify
     async function verifyLicense(manual=false){
       const key=licenseKeyInput.value.trim(), ch=licenseChannelInput.value.trim();
       if(!key||!ch){
@@ -291,7 +289,6 @@
         const snap=await get(ref(db, `/channels/${ch}/licenses/${key}`));
         const val=snap.val();
         if(val && (val.active===true || val.valid===true)){
-          // success: store, flip pill, unlock, prep links, ensure paths
           localStorage.setItem(LICENSE_KEY, JSON.stringify({ key, channel: ch }));
           statusPill.textContent="Licensed"; statusPill.className="status-pill good";
           licenseMsg.textContent=(val.assignedTo?`Licensed for ${val.assignedTo}`:"");
@@ -323,7 +320,6 @@
       lockAll(true);
     };
 
-    // Auto-attempt verify if saved
     (async()=>{
       lockAll(true);
       if(savedLic?.key&&savedLic?.channel){
@@ -334,7 +330,6 @@
       setOverlayUrl(); setViewerLink();
     })();
 
-    // ---- Auto-saves (picker + setup) ----
     function debounce(fn,ms=600){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; }
 
     const autoSavePicker=debounce(()=>{
@@ -370,6 +365,49 @@
     $("toggleSetup").onclick=()=>{ const hide=!setupBody.classList.contains("hidden"); setupBody.classList.toggle("hidden",hide); $("toggleSetup").textContent=hide?"Expand":"Collapse"; };
     $("clearPickerSetup").onclick=()=>{ localStorage.removeItem(PKR_KEY); slUserInput.value=""; slAmountInput.value=""; setViewerLink(); pickerSavedMsg.textContent=""; showToast("🧹 Picker setup cleared"); };
 
+    // =========================
+    // 🔽 ADDED: auto-promote state
+    // =========================
+    let currentState = null;
+    let latestQueueItems = [];
+    let autoPromoteBusy = false;
+
+    // Keep a live copy of current
+    onValue(curRef(), (snap) => {
+      currentState = snap.val() || null;
+    });
+
+    function isIdleCurrent(val) {
+      const h = (val && val.hero) ? String(val.hero).trim() : "";
+      const t = h.toLowerCase();
+      return !h || t === "pick a hero" || t === "waiting for pick..." || t === "waiting for hero";
+    }
+
+    async function autoPromoteIfIdle() {
+      if (autoPromoteBusy) return;
+      if (!isLicensed()) return;
+      if (!isIdleCurrent(currentState)) return;
+      if (!latestQueueItems.length) return;
+
+      autoPromoteBusy = true;
+      try {
+        const first = latestQueueItems[0]; // {key, hero, donor, amount, ts}
+        await set(curRef(), {
+          hero: first.hero,
+          donor: first.donor || "",
+          amount: first.amount || "",
+          ts: first.ts || Date.now()
+        });
+        await remove(ref(db, `/channels/${cid()}/queue/${first.key}`));
+        log(`Auto-sent to overlay: ${first.hero}${first.donor ? ` by ${first.donor}` : ""}`);
+      } catch (e) {
+        console.error("autoPromoteIfIdle error:", e);
+      } finally {
+        autoPromoteBusy = false;
+      }
+    }
+    // =========================
+
     // ---- Queue subscribe & render ----
     let unsub=null;
     function resubscribeQueue(){
@@ -378,7 +416,10 @@
         const obj=snap.val()||{};
         const items=Object.entries(obj).map(([key,val])=>({key, ...(val||{})}));
         items.sort((a,b)=>(a.ts||0)-(b.ts||0));
+        // 🔽 ADDED: store + attempt auto-promote
+        latestQueueItems = items;
         renderQueue(items);
+        autoPromoteIfIdle();
       });
       unsub=()=>off();
       liveStatus.textContent=`Listening @ /channels/${cid()}/queue`;
@@ -439,7 +480,6 @@
           const name=m.name||"Anonymous";
           const amount=Number(m.amount||0);
           const note=(m.message||"")+""; 
-          // Accept either [Hero Name] or "Request HeroName"
           let hero=null;
           const m1=note.match(/\[([^\]]+)\]/); if(m1) hero=m1[1].trim();
           if(!hero){
@@ -451,48 +491,16 @@
           log(`Donation queued: ${hero} by ${name} ($${amount})`);
         }
       });
-      // no alert; we already write to log + pill
     };
 
-    // Debug panel (Shift+click the Status pill title area)
+    // Debug panel
     $("statusCard").querySelector(".pill").addEventListener("click",(e)=>{ if(e.shiftKey){ $("debugPanel").classList.toggle("hidden"); updateDbg(); }});
     $("dbgRefresh").onclick=()=>resubscribeQueue();
     $("dbgClearLS").onclick=()=>{ localStorage.removeItem(CFG_KEY); localStorage.removeItem(PKR_KEY); localStorage.removeItem(LICENSE_KEY); showToast("Local storage cleared"); location.reload(); };
     function updateDbg(){ $("dbgInfo").textContent=`Path: /channels/${cid()}/*  | Licensed: ${isLicensed()}`; }
 
-    // Initial subscribe (safe even if locked; will render empty)
+    // Initial subscribe
     resubscribeQueue();
   </script>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
-    authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
-    databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
-    projectId: "marvel-rivals-overlay-7f867",
-    storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
-    messagingSenderId: "1078364810175",
-    appId: "1:1078364810175:web:fac410007b70b65e348f0a"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db  = getDatabase(app);
-
-  // Read ?channel=YourChannel from URL. Fallback "demo".
-  const params = new URLSearchParams(location.search);
-  const channel = (params.get("channel") || "demo").trim();
-
-  // Listen for the currently promoted hero
-  const currentRef = ref(db, `/channels/${channel}/current`);
-  onValue(currentRef, (snap) => {
-    const val = snap.val();
-    if (!val || !val.hero) return;
-    // Use your existing function (don’t change your image logic)
-    if (window.newDonation) window.newDonation(val.hero);
-  });
-</script>
-
 </body>
 </html>
