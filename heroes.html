@@ -204,6 +204,53 @@
   //   enqueueHero(hero.name);
   // right after you open the Streamlabs tip window.
 </script>
+<!-- Firebase (compat for simplicity) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
+<script>
+  // --- Firebase init (your project) ---
+  const fbCfg = {
+    apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
+    authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
+    databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+    projectId: "marvel-rivals-overlay-7f867",
+    storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
+    messagingSenderId: "1078364810175",
+    appId: "1:1078364810175:web:fac410007b70b65e348f0a"
+  };
+  if (!firebase.apps.length) firebase.initializeApp(fbCfg);
+  const dbp = firebase.database();
+
+  // Read ?channel= from the viewer link
+  const paramsP = new URLSearchParams(location.search);
+  const channelP = paramsP.get("channel") || "droopy";
+
+  // REPLACE your current card.onclick with THIS version:
+  (function wireHeroCards(){
+    const grid = document.getElementById("heroGrid");
+    if (!grid) return;
+    grid.querySelectorAll(".hero-card").forEach(card => {
+      card.onclick = async () => {
+        const heroName = card.querySelector(".hero-name").textContent.trim();
+
+        // Ask viewer for the name they will use on the Streamlabs tip (so we can match)
+        const donorName = prompt("Enter the name you'll use on the donation (exactly as it will appear on Streamlabs):");
+        if (!donorName) return;
+
+        // Save a recent click so queue can match by donor name if the message is empty
+        const key = donorName.trim().toLowerCase();
+        await dbp.ref(`/channels/${channelP}/lastClicks/${key}`).set({
+          hero: heroName,
+          ts: Date.now()
+        });
+
+        // Send them to your Streamlabs tip page (amount still preselected)
+        const tipUrl = `https://streamlabs.com/droopy2/tip?amount=5`;
+        window.open(tipUrl, "_blank");
+      };
+    });
+  })();
+</script>
 
 </body>
 </html>
