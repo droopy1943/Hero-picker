@@ -631,6 +631,43 @@ window.peekCurrent = async () => {
     console.log("Pushed:", hero, "by", donor, "→ key:", res.key);
   };
 </script>
+<script>
+  // Expose Firebase debug helpers globally
+  window.peekQueue = async () => {
+    const app = firebase.app();
+    const db = firebase.database(app);
+    const channel = localStorage.getItem("mr_license")
+      ? JSON.parse(localStorage.getItem("mr_license")).channel
+      : "demo";
+    const snap = await db.ref(`/channels/${channel}/queue`).get();
+    console.log("📦 Queue data:", snap.val());
+  };
+
+  window.peekCurrent = async () => {
+    const app = firebase.app();
+    const db = firebase.database(app);
+    const channel = localStorage.getItem("mr_license")
+      ? JSON.parse(localStorage.getItem("mr_license")).channel
+      : "demo";
+    const snap = await db.ref(`/channels/${channel}/current`).get();
+    console.log("🎯 Current data:", snap.val());
+  };
+
+  window.pushTest = async (hero = "Thor", donor = "TestUser") => {
+    const app = firebase.app();
+    const db = firebase.database(app);
+    const channel = localStorage.getItem("mr_license")
+      ? JSON.parse(localStorage.getItem("mr_license")).channel
+      : "demo";
+    const res = await db.ref(`/channels/${channel}/queue`).push({
+      hero,
+      donor,
+      amount: 5,
+      ts: Date.now(),
+    });
+    console.log("✅ Pushed hero:", hero, "by", donor, "→ key:", res.key);
+  };
+</script>
 
 </body>
 </html>
