@@ -481,24 +481,69 @@
       socket=io("https://sockets.streamlabs.com", { transports:["websocket"], query:{ token }});
       socket.on("connect", ()=>{ log("Streamlabs socket: connected"); $("liveStatus").textContent="Connected to Streamlabs"; });
       socket.on("disconnect", ()=>{ log("Streamlabs socket: disconnected"); $("liveStatus").textContent="Disconnected from Streamlabs"; });
-      socket.on("event", async (eventData)=>{
-        if(eventData.type!=="donation") return;
-        const arr=Array.isArray(eventData.message)?eventData.message:[eventData.message];
-        for(const m of arr){
-          const name=m.name||"Anonymous";
-          const amount=Number(m.amount||0);
-          const note=(m.message||"")+""; 
-          let hero=null;
-          const m1=note.match(/\[([^\]]+)\]/); if(m1) hero=m1[1].trim();
-          if(!hero){
-            const m2=note.match(/request\s+([A-Za-z][A-Za-z \-']+)/i);
-            if(m2) hero=m2[1].trim();
-          }
-          if(!hero) continue;
-          await push(qRef(), { hero, donor:name, amount, ts:Date.now() });
-          log(`Donation queued: ${hero} by ${name} ($${amount})`);
+      socket.on("event", async (eventData) => {
+  console.log("SL raw event:", eventData);
+  if (eventData.type !== "donation") return;
+
+  const msgs = Array.isArray(eventData.message) ? eventData.message : [eventData.message];
+
+  const HEROES = [
+    "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America",
+    "Cloak & Dagger","Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk",
+    "Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark","Loki",
+    "Luna Snow","Magik","Magneto","Mantis","Mister Fantastic","Moon Knight","Namor",
+    "Peni Parker","Phoenix","Psylocke","The Punisher","The Thing","Rocket Raccoon",
+    "Scarlet Witch","Squirrel Girl","Spider-Man","Star-Lord","Storm","Thor","Ultron",
+    "Venom","Winter Soldier","Wolverine"
+  ];
+
+  for (const m of msgs) {
+    const name   = (m?.name || "Anonymous").trim();
+    const amount = Number(m?.amount || m?.formatted_amount || 0);
+    const note   = String(m?.message || m?.msg || m?.note || "").trim();
+
+    let hero = null;
+
+    // 1) Brackets: [Cloak & Dagger]
+    const b = note.match(/\[([^\]]+)\]/);
+    if (b) hero = b[1].trim();
+
+    // 2) "request Thor" or "request: Thor"
+    if (!hero) {
+      const r = note.match(/request\s*[:\-]?\s*([^\r\n]+)/i);
+      if (r) hero = r[1].trim();
+    }
+
+    // 3) Fallback: detect any hero name inside the note
+    if (!hero && note) {
+      const lc = note.toLowerCase();
+      const hit = HEROES.find(h => lc.includes(h.toLowerCase()));
+      if (hit) hero = hit;
+    }
+
+    // 4) Ultimate fallback: match by donor name against last click saved in heroes.html
+    if (!hero && name && name.toLowerCase() !== "anonymous") {
+      try {
+        const lcSnap = await get(ref(db, `/channels/${cid()}/lastClicks/${name.toLowerCase()}`));
+        const lcVal = lcSnap.val();
+        if (lcVal && lcVal.hero && (Date.now() - (lcVal.ts||0) < 10 * 60 * 1000)) {
+          hero = lcVal.hero;
         }
-      });
+      } catch (e) {
+        console.warn("lastClicks lookup failed:", e);
+      }
+    }
+
+    if (!hero) {
+      log(`Donation received but no hero parsed (name="${name}", note="${note}")`);
+      continue;
+    }
+
+    await push(qRef(), { hero, donor: name, amount, ts: Date.now() });
+    log(`Donation queued: ${hero} by ${name} ($${amount})`);
+  }
+});
+
     };
 
     // Debug panel (unchanged)
