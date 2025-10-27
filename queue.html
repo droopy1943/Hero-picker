@@ -605,6 +605,32 @@ window.peekCurrent = async () => {
 };
 
 </script>
+<script>
+  // Expose Firebase debug helpers globally
+  window.peekQueue = async () => {
+    const app = firebase.app();
+    const db = firebase.database(app);
+    const path = `/channels/demo/queue`; // or replace 'demo' with your channel ID
+    const snap = await db.ref(path).get();
+    console.log("Queue:", snap.val());
+  };
+
+  window.peekCurrent = async () => {
+    const app = firebase.app();
+    const db = firebase.database(app);
+    const path = `/channels/demo/current`;
+    const snap = await db.ref(path).get();
+    console.log("Current:", snap.val());
+  };
+
+  window.pushTest = async (hero = "Thor", donor = "TestUser") => {
+    const app = firebase.app();
+    const db = firebase.database(app);
+    const path = `/channels/demo/queue`;
+    const res = await db.ref(path).push({ hero, donor, amount: 5, ts: Date.now() });
+    console.log("Pushed:", hero, "by", donor, "→ key:", res.key);
+  };
+</script>
 
 </body>
 </html>
