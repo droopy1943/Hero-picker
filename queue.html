@@ -521,12 +521,13 @@
       if (hit) hero = hit;
     }
 
-    // 4) Ultimate fallback: match by donor name against last click saved in heroes.html
+    // 4) Ultimate fallback: match by donor name against last click saved by heroes.html
     if (!hero && name && name.toLowerCase() !== "anonymous") {
       try {
-        const lcSnap = await get(ref(db, `/channels/${cid()}/lastClicks/${name.toLowerCase()}`));
+        const donorKey = name.toLowerCase();
+        const lcSnap = await get(ref(db, `/channels/${cid()}/lastClicks/${donorKey}`));
         const lcVal = lcSnap.val();
-        if (lcVal && lcVal.hero && (Date.now() - (lcVal.ts||0) < 10 * 60 * 1000)) {
+        if (lcVal && lcVal.hero && (Date.now() - (lcVal.ts || 0) < 10 * 60 * 1000)) {
           hero = lcVal.hero;
         }
       } catch (e) {
@@ -543,6 +544,7 @@
     log(`Donation queued: ${hero} by ${name} ($${amount})`);
   }
 });
+
 
     };
 
