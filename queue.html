@@ -488,14 +488,19 @@
   const msgs = Array.isArray(eventData.message) ? eventData.message : [eventData.message];
 
   const HEROES = [
-    "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America",
-    "Cloak & Dagger","Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk",
-    "Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark","Loki",
-    "Luna Snow","Magik","Magneto","Mantis","Mister Fantastic","Moon Knight","Namor",
-    "Peni Parker","Phoenix","Psylocke","The Punisher","The Thing","Rocket Raccoon",
-    "Scarlet Witch","Squirrel Girl","Spider-Man","Star-Lord","Storm","Thor","Ultron",
-    "Venom","Winter Soldier","Wolverine"
-  ];
+  "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America",
+  "Cloak & Dagger","Cloak and Dagger",            // both
+  "Daredevil",
+  "Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk",
+  "Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark",
+  "Loki","Luna Snow","Magik","Magneto","Mantis","Mister Fantastic",
+  "Moon Knight","Namor","Peni Parker","Phoenix","Psylocke","The Punisher",
+  "The Thing","Rocket Raccoon","Scarlet Witch","Squirrel Girl",
+  "Spider-Man","Spider Man",                      // both
+  "Star-Lord","Star Lord",                        // both
+  "Storm","Thor","Ultron","Venom","Winter Soldier","Wolverine"
+];
+
 
   for (const m of msgs) {
     const name   = (m?.name || "Anonymous").trim();
