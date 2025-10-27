@@ -587,6 +587,23 @@
     // Your existing function signature: newDonation(donor, amount, heroName)
     newDonation(val.donor || "", val.amount || "", val.hero);
   });
+  // === DEBUG HELPERS — append-only ===
+window.peekQueue = async () => {
+  const snap = await get(qRef());
+  console.log("Queue @", `/channels/${cid()}/queue`, "=", snap.val());
+};
+
+window.pushTest = async (hero = "Thor", donor = "TestUser") => {
+  const res = await push(qRef(), { hero, donor, amount: 5, ts: Date.now() });
+  console.log("Pushed:", hero, "by", donor, "key:", res.key);
+  return res.key;
+};
+
+window.peekCurrent = async () => {
+  const snap = await get(curRef());
+  console.log("Current @", `/channels/${cid()}/current`, "=", snap.val());
+};
+
 </script>
 
 </body>
