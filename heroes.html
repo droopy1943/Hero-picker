@@ -7,9 +7,6 @@
   <style>
     body { font-family: Arial, sans-serif; background:#111; color:#fff; margin:0; padding:20px; text-align:center; }
     h1 { color:#ffcc00; margin: 10px 0 12px; }
-    .namebar { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin:0 0 14px; }
-    .namebar input { width:260px; max-width:100%; padding:8px 10px; border-radius:8px; border:1px solid #444; background:#1a1a1a; color:#fff; }
-    .namebar .hint { color:#bbb; font-size:12px; }
     .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:15px; margin:0 auto; max-width:1000px; }
     .hero-card { background:#222; border:2px solid #444; border-radius:8px; padding:10px; cursor:pointer; transition:transform .2s, border-color .2s; text-align:center; }
     .hero-card:hover { transform:scale(1.05); border-color:#ffcc00; }
@@ -20,87 +17,59 @@
 </head>
 <body>
   <h1>Pick Your Hero!</h1>
-
-  <div class="namebar">
-    <input id="tipName" placeholder="Your Streamlabs tip display name" />
-    <div class="hint">We’ll match your donation by this name. No message needed.</div>
-  </div>
-
   <div class="grid" id="heroGrid"></div>
-  <div class="foot">Amount is preset to $5 on Streamlabs.</div>
+  <div class="foot">Amount is preset to $5. Message is auto-filled so you don’t have to type.</div>
 
-  <!-- Firebase (compat for simplicity) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
   <script>
-    // --- Firebase init (your project) ---
-    const fbCfg = {
-      apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
-      authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
-      databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
-      projectId: "marvel-rivals-overlay-7f867",
-      storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
-      messagingSenderId: "1078364810175",
-      appId: "1:1078364810175:web:fac410007b70b65e348f0a"
-    };
-    if (!firebase.apps.length) firebase.initializeApp(fbCfg);
-    const db = firebase.database();
-
-    // Channel from ?channel=, default to your actual channel ID if you want
-    const params = new URLSearchParams(location.search);
-    const CHANNEL = params.get("channel") || "droopy";
-
-    // Heroes list (exactly what you already use, with image paths)
+    // Same hero list you’re using
     const heroes = [
-      { name: "Adam Warlock", img: "images/Adam Warlock.png" },
-      { name: "Angela", img: "images/Angela.png" },
-      { name: "Black Panther", img: "images/Black Panther.png" },
-      { name: "Black Widow", img: "images/Black Widow.png" },
-      { name: "Blade", img: "images/Blade.png" },
-      { name: "Captain America", img: "images/Captain America.png" },
-      { name: "Cloak & Dagger", img: "images/Cloak & Dagger.png" },
-      { name: "Doctor Strange", img: "images/Doctor Strange.png" },
-      { name: "Emma Frost", img: "images/Emma Frost.png" },
-      { name: "Groot", img: "images/Groot.png" },
-      { name: "Hawkeye", img: "images/Hawkeye.png" },
-      { name: "Hela", img: "images/Hela.png" },
-      { name: "Hulk", img: "images/Hulk.png" },
-      { name: "Human Torch", img: "images/Human Torch.png" },
-      { name: "Invisible Woman", img: "images/Invisible Woman.png" },
-      { name: "Iron Fist", img: "images/Iron Fist.png" },
-      { name: "Iron Man", img: "images/Iron Man.png" },
-      { name: "Jeff the Land Shark", img: "images/Jeff the Land Shark.png" },
-      { name: "Loki", img: "images/Loki.png" },
-      { name: "Luna Snow", img: "images/Luna Snow.png" },
-      { name: "Magik", img: "images/Magik.png" },
-      { name: "Magneto", img: "images/Magneto.png" },
-      { name: "Mantis", img: "images/Mantis.png" },
-      { name: "Mister Fantastic", img: "images/Mister Fantastic.png" },
-      { name: "Moon Knight", img: "images/Moon Knight.png" },
-      { name: "Namor", img: "images/Namor.png" },
-      { name: "Peni Parker", img: "images/Peni Parker.png" },
-      { name: "Phoenix", img: "images/Phoenix.png" },
-      { name: "Psylocke", img: "images/Psylocke.png" },
-      { name: "The Punisher", img: "images/The Punisher.png" },
-      { name: "The Thing", img: "images/The Thing.png" },
-      { name: "Rocket Raccoon", img: "images/Rocket Raccoon.png" },
-      { name: "Scarlet Witch", img: "images/Scarlet Witch.png" },
-      { name: "Squirrel Girl", img: "images/Squirrel Girl.png" },
-      { name: "Spider-Man", img: "images/Spider-Man.png" },
-      { name: "Star-Lord", img: "images/Star-Lord.png" },
-      { name: "Storm", img: "images/Storm.png" },
-      { name: "Thor", img: "images/Thor.png" },
-      { name: "Ultron", img: "images/Ultron.png" },
-      { name: "Venom", img: "images/Venom.png" },
-      { name: "Winter Soldier", img: "images/Winter Soldier.png" },
-      { name: "Wolverine", img: "images/Wolverine.png" }
-    ];
+  { name: "Adam Warlock", img: "images/Adam Warlock.png" },
+  { name: "Angela", img: "images/Angela.png" },
+  { name: "Black Panther", img: "images/Black Panther.png" },
+  { name: "Black Widow", img: "images/Black Widow.png" },
+  { name: "Blade", img: "images/Blade.png" },
+  { name: "Captain America", img: "images/Captain America.png" },
+  { name: "Cloak & Dagger", img: "images/Cloak & Dagger.png" }, // keep ampersand for your file
+  { name: "Daredevil", img: "images/Daredevil.png" },
+  { name: "Doctor Strange", img: "images/Doctor Strange.png" },
+  { name: "Emma Frost", img: "images/Emma Frost.png" },
+  { name: "Groot", img: "images/Groot.png" },
+  { name: "Hawkeye", img: "images/Hawkeye.png" },
+  { name: "Hela", img: "images/Hela.png" },
+  { name: "Hulk", img: "images/Hulk.png" },
+  { name: "Human Torch", img: "images/Human Torch.png" },
+  { name: "Invisible Woman", img: "images/Invisible Woman.png" },
+  { name: "Iron Fist", img: "images/Iron Fist.png" },
+  { name: "Iron Man", img: "images/Iron Man.png" },
+  { name: "Jeff the Land Shark", img: "images/Jeff the Land Shark.png" },
+  { name: "Loki", img: "images/Loki.png" },
+  { name: "Luna Snow", img: "images/Luna Snow.png" },
+  { name: "Magik", img: "images/Magik.png" },
+  { name: "Magneto", img: "images/Magneto.png" },
+  { name: "Mantis", img: "images/Mantis.png" },
+  { name: "Mister Fantastic", img: "images/Mister Fantastic.png" },
+  { name: "Moon Knight", img: "images/Moon Knight.png" },
+  { name: "Namor", img: "images/Namor.png" },
+  { name: "Peni Parker", img: "images/Peni Parker.png" },
+  { name: "Phoenix", img: "images/Phoenix.png" },
+  { name: "Psylocke", img: "images/Psylocke.png" },
+  { name: "The Punisher", img: "images/The Punisher.png" },
+  { name: "The Thing", img: "images/The Thing.png" },
+  { name: "Rocket Raccoon", img: "images/Rocket Raccoon.png" },
+  { name: "Scarlet Witch", img: "images/Scarlet Witch.png" },
+  { name: "Squirrel Girl", img: "images/Squirrel Girl.png" },
+  { name: "Spider-Man", img: "images/Spider-Man.png" },         // keep hyphen for your file
+  { name: "Star-Lord", img: "images/Star-Lord.png" },            // keep hyphen for your file
+  { name: "Storm", img: "images/Storm.png" },
+  { name: "Thor", img: "images/Thor.png" },
+  { name: "Ultron", img: "images/Ultron.png" },
+  { name: "Venom", img: "images/Venom.png" },
+  { name: "Winter Soldier", img: "images/Winter Soldier.png" },
+  { name: "Wolverine", img: "images/Wolverine.png" }
+];
 
-    // Render grid
+
     const grid = document.getElementById("heroGrid");
-    const tipNameInput = document.getElementById("tipName");
-    tipNameInput.value = localStorage.getItem("mr_tip_name") || "";
-
     heroes.forEach(hero => {
       const card = document.createElement("div");
       card.className = "hero-card";
@@ -108,24 +77,10 @@
         <img src="${hero.img}" alt="${hero.name}">
         <div class="hero-name">${hero.name}</div>
       `;
-      card.onclick = async () => {
-        const donorName = (tipNameInput.value || "").trim();
-        if (!donorName) {
-          alert("Enter the name you'll use on the Streamlabs tip (display name).");
-          tipNameInput.focus();
-          return;
-        }
-        localStorage.setItem("mr_tip_name", donorName);
-
-        // Save last click for this donor — so queue can match by name if message is blank
-        const key = donorName.toLowerCase();
-        await db.ref(`/channels/${CHANNEL}/lastClicks/${key}`).set({
-          hero: hero.name,
-          ts: Date.now()
-        });
-
-        // Send to Streamlabs (no message required)
-        const tipUrl = `https://streamlabs.com/droopy2/tip?amount=5`;
+      card.onclick = () => {
+        // Prefill Streamlabs with amount + message “[Hero]”
+        const msg = encodeURIComponent(`[${hero.name}]`);
+        const tipUrl = `https://streamlabs.com/droopy2/tip?amount=5&message=${msg}`;
         window.open(tipUrl, "_blank");
       };
       grid.appendChild(card);
