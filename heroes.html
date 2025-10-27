@@ -2,99 +2,39 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Droopy Hero Picker</title>
+  <title>Marvel Rivals Hero Request</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      background-color: #0d0d0d;
-      color: #fff;
-      font-family: "Poppins", sans-serif;
-      margin: 0;
-      padding: 20px;
-      text-align: center;
-    }
-
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 10px;
-    }
-
-    p {
-      color: #aaa;
-      margin-bottom: 20px;
-    }
-
-    #heroGrid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 15px;
-      margin-top: 20px;
-    }
-
-    .hero-card {
-      background-color: #1a1a1a;
-      border: 2px solid #e62429;
-      border-radius: 10px;
-      padding: 10px;
-      transition: transform 0.2s, box-shadow 0.2s;
-      cursor: pointer;
-    }
-
-    .hero-card:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 10px #e62429;
-    }
-
-    .hero-card img {
-      width: 100%;
-      border-radius: 8px;
-      object-fit: cover;
-    }
-
-    .hero-name {
-      margin-top: 8px;
-      font-weight: bold;
-      font-size: 0.9rem;
-    }
-
-    footer {
-      margin-top: 25px;
-      color: #888;
-      font-size: 0.8rem;
-    }
-
-    footer a {
-      color: #9146ff;
-      text-decoration: none;
-    }
-
-    footer a:hover {
-      text-decoration: underline;
-    }
-
-    #loading {
-      color: #999;
-      margin-top: 40px;
-      font-size: 1rem;
-    }
+    body { font-family: Arial, sans-serif; background:#111; color:#fff; margin:0; padding:20px; text-align:center; }
+    h1 { color:#ffcc00; margin: 10px 0 12px; }
+    .namebar { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin:0 0 14px; }
+    .namebar input { width:260px; max-width:100%; padding:8px 10px; border-radius:8px; border:1px solid #444; background:#1a1a1a; color:#fff; }
+    .namebar .hint { color:#bbb; font-size:12px; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:15px; margin:0 auto; max-width:1000px; }
+    .hero-card { background:#222; border:2px solid #444; border-radius:8px; padding:10px; cursor:pointer; transition:transform .2s, border-color .2s; text-align:center; }
+    .hero-card:hover { transform:scale(1.05); border-color:#ffcc00; }
+    .hero-card img { width:100px; height:100px; object-fit:contain; margin-bottom:8px; }
+    .hero-name { font-size:.9rem; color:#fff; }
+    .foot { margin-top:14px; color:#aaa; font-size:12px; }
   </style>
 </head>
 <body>
-  <h1>Pick Your Marvel Rivals Hero</h1>
-  <p>Select your favorite hero to send a request to the streamer!</p>
+  <h1>Pick Your Hero!</h1>
 
-  <div id="heroGrid"></div>
-  <div id="loading">Loading heroes...</div>
+  <div class="namebar">
+    <input id="tipName" placeholder="Your Streamlabs tip display name" />
+    <div class="hint">We’ll match your donation by this name. No message needed.</div>
+  </div>
 
-  <footer>
-    Created by <a href="https://twitch.tv/droopy" target="_blank">🟣 Droopy</a>
-  </footer>
+  <div class="grid" id="heroGrid"></div>
+  <div class="foot">Amount is preset to $5 on Streamlabs.</div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-
-    const firebaseConfig = {
+  <!-- Firebase (compat for simplicity) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
+  <script>
+    // --- Firebase init (your project) ---
+    const fbCfg = {
       apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
       authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
       databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
@@ -103,154 +43,93 @@
       messagingSenderId: "1078364810175",
       appId: "1:1078364810175:web:fac410007b70b65e348f0a"
     };
+    if (!firebase.apps.length) firebase.initializeApp(fbCfg);
+    const db = firebase.database();
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    // Channel from ?channel=, default to your actual channel ID if you want
+    const params = new URLSearchParams(location.search);
+    const CHANNEL = params.get("channel") || "droopy";
 
+    // Heroes list (exactly what you already use, with image paths)
     const heroes = [
-      "Adam Warlock", "Angela", "Black Panther", "Black Widow", "Blade", "Captain America",
-      "Cloak & Dagger", "Doctor Strange", "Emma Frost", "Groot", "Hawkeye", "Hela", "Hulk",
-      "Human Torch", "Invisible Woman", "Iron Fist", "Iron Man", "Jeff the Land Shark", "Loki",
-      "Luna Snow", "Magik", "Magneto", "Mantis", "Mister Fantastic", "Moon Knight", "Namor",
-      "Peni Parker", "Phoenix", "Psylocke", "The Punisher", "The Thing", "Rocket Raccoon",
-      "Scarlet Witch", "Squirrel Girl", "Spider-Man", "Star-Lord", "Storm", "Thor", "Ultron",
-      "Venom", "Winter Soldier", "Wolverine"
+      { name: "Adam Warlock", img: "images/Adam Warlock.png" },
+      { name: "Angela", img: "images/Angela.png" },
+      { name: "Black Panther", img: "images/Black Panther.png" },
+      { name: "Black Widow", img: "images/Black Widow.png" },
+      { name: "Blade", img: "images/Blade.png" },
+      { name: "Captain America", img: "images/Captain America.png" },
+      { name: "Cloak & Dagger", img: "images/Cloak & Dagger.png" },
+      { name: "Doctor Strange", img: "images/Doctor Strange.png" },
+      { name: "Emma Frost", img: "images/Emma Frost.png" },
+      { name: "Groot", img: "images/Groot.png" },
+      { name: "Hawkeye", img: "images/Hawkeye.png" },
+      { name: "Hela", img: "images/Hela.png" },
+      { name: "Hulk", img: "images/Hulk.png" },
+      { name: "Human Torch", img: "images/Human Torch.png" },
+      { name: "Invisible Woman", img: "images/Invisible Woman.png" },
+      { name: "Iron Fist", img: "images/Iron Fist.png" },
+      { name: "Iron Man", img: "images/Iron Man.png" },
+      { name: "Jeff the Land Shark", img: "images/Jeff the Land Shark.png" },
+      { name: "Loki", img: "images/Loki.png" },
+      { name: "Luna Snow", img: "images/Luna Snow.png" },
+      { name: "Magik", img: "images/Magik.png" },
+      { name: "Magneto", img: "images/Magneto.png" },
+      { name: "Mantis", img: "images/Mantis.png" },
+      { name: "Mister Fantastic", img: "images/Mister Fantastic.png" },
+      { name: "Moon Knight", img: "images/Moon Knight.png" },
+      { name: "Namor", img: "images/Namor.png" },
+      { name: "Peni Parker", img: "images/Peni Parker.png" },
+      { name: "Phoenix", img: "images/Phoenix.png" },
+      { name: "Psylocke", img: "images/Psylocke.png" },
+      { name: "The Punisher", img: "images/The Punisher.png" },
+      { name: "The Thing", img: "images/The Thing.png" },
+      { name: "Rocket Raccoon", img: "images/Rocket Raccoon.png" },
+      { name: "Scarlet Witch", img: "images/Scarlet Witch.png" },
+      { name: "Squirrel Girl", img: "images/Squirrel Girl.png" },
+      { name: "Spider-Man", img: "images/Spider-Man.png" },
+      { name: "Star-Lord", img: "images/Star-Lord.png" },
+      { name: "Storm", img: "images/Storm.png" },
+      { name: "Thor", img: "images/Thor.png" },
+      { name: "Ultron", img: "images/Ultron.png" },
+      { name: "Venom", img: "images/Venom.png" },
+      { name: "Winter Soldier", img: "images/Winter Soldier.png" },
+      { name: "Wolverine", img: "images/Wolverine.png" }
     ];
 
-    const heroGrid = document.getElementById("heroGrid");
-    const loading = document.getElementById("loading");
-    const params = new URLSearchParams(location.search);
-    const channelId = params.get("channel") || "demo";
-
-    async function loadSettings() {
-      try {
-        const settingsRef = ref(db, `/channels/${channelId}/settings`);
-        const snap = await get(settingsRef);
-        const data = snap.val();
-        const streamlabsUser = data?.streamlabsUser || "droopy2";
-        const defaultAmount = data?.defaultAmount || "5";
-        renderHeroes(streamlabsUser, defaultAmount);
-      } catch (e) {
-        console.error("Failed to load settings", e);
-        renderHeroes("droopy2", "5");
-      }
-    }
-
-    function renderHeroes(streamlabsUser, defaultAmount) {
-      loading.remove();
-      heroes.forEach(hero => {
-        const card = document.createElement("div");
-        card.classList.add("hero-card");
-
-        const img = document.createElement("img");
-        img.src = `images/${encodeURIComponent(hero)}.png`;
-        img.alt = hero;
-
-        const name = document.createElement("div");
-        name.classList.add("hero-name");
-        name.textContent = hero;
-
-        card.appendChild(img);
-        card.appendChild(name);
-
-        card.onclick = () => {
-          const message = encodeURIComponent(`I want to request [${hero}]`);
-          const url = `https://streamlabs.com/${streamlabsUser}/tip?amount=${defaultAmount}&message=${message}`;
-          window.open(url, "_blank");
-        };
-
-        heroGrid.appendChild(card);
-      });
-    }
-
-    loadSettings();
-  </script>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-  import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
-    authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
-    databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
-    projectId: "marvel-rivals-overlay-7f867",
-    storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
-    messagingSenderId: "1078364810175",
-    appId: "1:1078364810175:web:fac410007b70b65e348f0a"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db  = getDatabase(app);
-
-  // Read ?channel=YourChannel from URL. Fallback "demo".
-  const params = new URLSearchParams(location.search);
-  const channel = (params.get("channel") || "demo").trim();
-  const qRef = ref(db, `/channels/${channel}/queue`);
-
-  // Attach to your existing click handler after it opens the Streamlabs tip:
-  // Call this function when a hero is selected:
-  window.enqueueHero = async function(heroName, donor = "", amount = "") {
-    try {
-      const itemRef = push(qRef);
-      await set(itemRef, { hero: heroName, donor: donor || null, amount: amount || null, ts: Date.now() });
-      // Optional: toast/log here if you want
-      console.log("Enqueued:", heroName);
-    } catch (e) {
-      console.error("Enqueue failed:", e);
-    }
-  };
-
-  // If your picker currently builds cards/buttons, call:
-  //   enqueueHero(hero.name);
-  // right after you open the Streamlabs tip window.
-</script>
-<!-- Firebase (compat for simplicity) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
-<script>
-  // --- Firebase init (your project) ---
-  const fbCfg = {
-    apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
-    authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
-    databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
-    projectId: "marvel-rivals-overlay-7f867",
-    storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
-    messagingSenderId: "1078364810175",
-    appId: "1:1078364810175:web:fac410007b70b65e348f0a"
-  };
-  if (!firebase.apps.length) firebase.initializeApp(fbCfg);
-  const dbp = firebase.database();
-
-  // Read ?channel= from the viewer link
-  const paramsP = new URLSearchParams(location.search);
-  const channelP = paramsP.get("channel") || "droopy";
-
-  // REPLACE your current card.onclick with THIS version:
-  (function wireHeroCards(){
+    // Render grid
     const grid = document.getElementById("heroGrid");
-    if (!grid) return;
-    grid.querySelectorAll(".hero-card").forEach(card => {
+    const tipNameInput = document.getElementById("tipName");
+    tipNameInput.value = localStorage.getItem("mr_tip_name") || "";
+
+    heroes.forEach(hero => {
+      const card = document.createElement("div");
+      card.className = "hero-card";
+      card.innerHTML = `
+        <img src="${hero.img}" alt="${hero.name}">
+        <div class="hero-name">${hero.name}</div>
+      `;
       card.onclick = async () => {
-        const heroName = card.querySelector(".hero-name").textContent.trim();
+        const donorName = (tipNameInput.value || "").trim();
+        if (!donorName) {
+          alert("Enter the name you'll use on the Streamlabs tip (display name).");
+          tipNameInput.focus();
+          return;
+        }
+        localStorage.setItem("mr_tip_name", donorName);
 
-        // Ask viewer for the name they will use on the Streamlabs tip (so we can match)
-        const donorName = prompt("Enter the name you'll use on the donation (exactly as it will appear on Streamlabs):");
-        if (!donorName) return;
-
-        // Save a recent click so queue can match by donor name if the message is empty
-        const key = donorName.trim().toLowerCase();
-        await dbp.ref(`/channels/${channelP}/lastClicks/${key}`).set({
-          hero: heroName,
+        // Save last click for this donor — so queue can match by name if message is blank
+        const key = donorName.toLowerCase();
+        await db.ref(`/channels/${CHANNEL}/lastClicks/${key}`).set({
+          hero: hero.name,
           ts: Date.now()
         });
 
-        // Send them to your Streamlabs tip page (amount still preselected)
+        // Send to Streamlabs (no message required)
         const tipUrl = `https://streamlabs.com/droopy2/tip?amount=5`;
         window.open(tipUrl, "_blank");
       };
+      grid.appendChild(card);
     });
-  })();
-</script>
-
+  </script>
 </body>
 </html>
