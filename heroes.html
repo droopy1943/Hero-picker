@@ -11,151 +11,196 @@
     .hero-card { background:#222; border:2px solid #444; border-radius:8px; padding:10px; cursor:pointer; transition:transform .2s, border-color .2s; text-align:center; }
     .hero-card:hover { transform:scale(1.05); border-color:#ffcc00; }
     .hero-card img { width:100px; height:100px; object-fit:contain; margin-bottom:8px; }
-    .hero-name { font-size:.9rem; color:#fff; word-break: break-word; }
+    .hero-name { font-size:.9rem; color:#fff; }
     .foot { margin-top:14px; color:#aaa; font-size:12px; }
-    .notice { margin:10px auto 14px; color:#ffcc00; font-size:13px; min-height: 1em; }
+    .bar { background:#1e293b; color:#cbd5e1; padding:10px 12px; border:1px solid #334155; border-radius:8px; display:inline-flex; gap:8px; align-items:center; margin:8px 0 16px; }
+    .bar input { background:#0f172a; border:1px solid #334155; color:#e2e8f0; border-radius:6px; padding:6px 8px; width:220px; }
+    .bar button { background:#e62429; border:none; color:#fff; border-radius:6px; padding:8px 10px; cursor:pointer; }
+    .bar small { color:#94a3b8; }
+    a.inline { color:#61dafb; cursor:pointer; text-decoration:underline; }
   </style>
 </head>
 <body>
   <h1>Pick Your Hero!</h1>
-  <div id="notice" class="notice"></div>
-  <div class="grid" id="heroGrid"></div>
-  <div class="foot">Amount is preset to $5. Message is auto-filled so you don’t have to type.</div>
 
-  <!-- Firebase compat (safe on GH Pages, no modules) -->
+  <!-- Small “setup” bar so the viewer can set their Streamlabs username & display name once -->
+  <div class="bar" id="setupBar">
+    <div>
+      <div style="font-weight:700;">Quick setup (one time)</div>
+      <small>Set your Streamlabs username and the name you donate under.</small>
+    </div>
+    <div>
+      <input id="slUser" placeholder="Streamlabs username (e.g. droopy2)" />
+    </div>
+    <div>
+      <input id="viewerName" placeholder="Your donation display name" />
+    </div>
+    <button id="saveSetup">Save</button>
+  </div>
+
+  <div class="grid" id="heroGrid"></div>
+  <div class="foot">
+    Amount is preset to $5. Message is auto-filled so you don’t have to type. <span id="changeNames" class="inline">(change names)</span>
+  </div>
+
+  <!-- Firebase (compat) for simple writes to Realtime DB -->
   <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
 
   <script>
-    (async function () {
-      const notice = document.getElementById("notice");
-      const grid = document.getElementById("heroGrid");
+    // ---- Firebase init (your existing project) ----
+    const firebaseConfig = {
+      apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
+      authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
+      databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+      projectId: "marvel-rivals-overlay-7f867",
+      storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
+      messagingSenderId: "1078364810175",
+      appId: "1:1078364810175:web:fac410007b70b65e348f0a"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-      // --- Params ---
-      const params   = new URLSearchParams(location.search);
-      const channel  = (params.get("channel") || "").trim();            // e.g., Droopy
-      let   slUser   = (params.get("user")    || "").trim();             // Streamlabs username
-      const amount   = (params.get("amount")  || "5").trim();            // optional override
+    // ---- URL params & one-time stored values ----
+    const params = new URLSearchParams(location.search);
+    const CHANNEL = params.get("channel") || "demo"; // required for lastClicks path
+    const urlUser = params.get("user");              // Streamlabs username can come from URL
 
-      // --- Hero list (filenames EXACTLY as in your repo) ---
-      const heroes = [
-        { name: "Adam Warlock", img: "images/Adam Warlock.png" },
-        { name: "Angela", img: "images/Angela.png" },
-        { name: "Black Panther", img: "images/Black Panther.png" },
-        { name: "Black Widow", img: "images/Black Widow.png" },
-        { name: "Blade", img: "images/Blade.png" },
-        { name: "Captain America", img: "images/Captain America.png" },
-        { name: "Cloak & Dagger", img: "images/Cloak & Dagger.png" },
-        { name: "Daredevil", img: "images/Daredevil.png" },
-        { name: "Doctor Strange", img: "images/Doctor Strange.png" },
-        { name: "Emma Frost", img: "images/Emma Frost.png" },
-        { name: "Groot", img: "images/Groot.png" },
-        { name: "Hawkeye", img: "images/Hawkeye.png" },
-        { name: "Hela", img: "images/Hela.png" },
-        { name: "Hulk", img: "images/Hulk.png" },
-        { name: "Human Torch", img: "images/Human Torch.png" },
-        { name: "Invisible Woman", img: "images/Invisible Woman.png" },
-        { name: "Iron Fist", img: "images/Iron Fist.png" },
-        { name: "Iron Man", img: "images/Iron Man.png" },
-        { name: "Jeff the Land Shark", img: "images/Jeff the Land Shark.png" },
-        { name: "Loki", img: "images/Loki.png" },
-        { name: "Luna Snow", img: "images/Luna Snow.png" },
-        { name: "Magik", img: "images/Magik.png" },
-        { name: "Magneto", img: "images/Magneto.png" },
-        { name: "Mantis", img: "images/Mantis.png" },
-        { name: "Mister Fantastic", img: "images/Mister Fantastic.png" },
-        { name: "Moon Knight", img: "images/Moon Knight.png" },
-        { name: "Namor", img: "images/Namor.png" },
-        { name: "Peni Parker", img: "images/Peni Parker.png" },
-        { name: "Phoenix", img: "images/Phoenix.png" },
-        { name: "Psylocke", img: "images/Psylocke.png" },
-        { name: "The Punisher", img: "images/The Punisher.png" },
-        { name: "The Thing", img: "images/The Thing.png" },
-        { name: "Rocket Raccoon", img: "images/Rocket Raccoon.png" },
-        { name: "Scarlet Witch", img: "images/Scarlet Witch.png" },
-        { name: "Squirrel Girl", img: "images/Squirrel Girl.png" },
-        { name: "Spider-Man", img: "images/Spider-Man.png" },
-        { name: "Star-Lord", img: "images/Star-Lord.png" },
-        { name: "Storm", img: "images/Storm.png" },
-        { name: "Thor", img: "images/Thor.png" },
-        { name: "Ultron", img: "images/Ultron.png" },
-        { name: "Venom", img: "images/Venom.png" },
-        { name: "Winter Soldier", img: "images/Winter Soldier.png" },
-        { name: "Wolverine", img: "images/Wolverine.png" }
-      ];
+    const LS_SL_USER = "mr_sl_user";        // viewer’s Streamlabs username
+    const LS_VIEWER_NAME = "mr_viewer_name";// viewer’s donation display name
 
-      // --- Always render the grid (no silent failures) ---
-      function renderGrid() {
-        grid.innerHTML = "";
-        heroes.forEach(hero => {
-          const card = document.createElement("div");
-          card.className = "hero-card";
+    // use in this order: ?user=... → localStorage → blank (force setup)
+    const slUserInput = document.getElementById("slUser");
+    const viewerNameInput = document.getElementById("viewerName");
+    const saveBtn = document.getElementById("saveSetup");
+    const setupBar = document.getElementById("setupBar");
+    const changeNames = document.getElementById("changeNames");
 
-          const img = document.createElement("img");
-          // Encode the path so spaces and & work on GH Pages
-          img.src = encodeURI(hero.img);
-          img.alt = hero.name;
-          img.onerror = () => { img.style.opacity = 0.3; img.title = `Image not found: ${hero.img}`; };
-
-          const nameDiv = document.createElement("div");
-          nameDiv.className = "hero-name";
-          nameDiv.textContent = hero.name;
-
-          card.appendChild(img);
-          card.appendChild(nameDiv);
-          card.onclick = () => {
-            if (!slUser) {
-              alert("Donation link isn’t configured yet on this page.\nAsk the streamer for the correct link with ?user=<their_streamlabs_username>.");
-              return;
-            }
-            const msg = encodeURIComponent(`[${hero.name}]`);
-            const tipUrl = `https://streamlabs.com/${encodeURIComponent(slUser)}/tip?amount=${encodeURIComponent(amount)}&message=${msg}`;
-            window.open(tipUrl, "_blank");
-          };
-
-          grid.appendChild(card);
-        });
-      }
-
-      renderGrid(); // show UI immediately
-
-      // --- If ?user= missing but ?channel= provided, try Firebase for streamlabsUser ---
-      if (!slUser && channel) {
-        try {
-          // Init Firebase
-          const firebaseConfig = {
-            apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
-            authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
-            databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
-            projectId: "marvel-rivals-overlay-7f867",
-            storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
-            messagingSenderId: "1078364810175",
-            appId: "1:1078364810175:web:fac410007b70b65e348f0a"
-          };
-          if (firebase.apps.length === 0) {
-            firebase.initializeApp(firebaseConfig);
-          }
-          const db = firebase.database();
-          const snap = await db.ref(`/channels/${channel}/settings`).get();
-          const settings = snap.val() || {};
-          if (settings.streamlabsUser) {
-            slUser = String(settings.streamlabsUser).trim();
-            notice.textContent = `Donations will go to: ${slUser}`;
-          } else {
-            notice.textContent = `Streamer donation username not configured for channel "${channel}".`;
-          }
-        } catch (err) {
-          console.warn("Firebase lookup failed; page still usable:", err);
-          if (!notice.textContent) {
-            notice.textContent = "Heads up: could not auto-detect the donation username.";
-          }
-        }
-      } else if (slUser) {
-        notice.textContent = `Donations will go to: ${slUser}`;
+    function getSLUser() {
+      return urlUser || localStorage.getItem(LS_SL_USER) || "";
+    }
+    function getViewerName() {
+      return localStorage.getItem(LS_VIEWER_NAME) || "";
+    }
+    function maybeShowSetup() {
+      if (!getSLUser() || !getViewerName()) {
+        // Prefill inputs if we have partial data
+        slUserInput.value = getSLUser();
+        viewerNameInput.value = getViewerName();
+        setupBar.style.display = "inline-flex";
       } else {
-        notice.textContent = "Tip: add ?user=<your_streamlabs_username> to this link to enable the donate button.";
+        setupBar.style.display = "none";
       }
-    })();
+    }
+    saveBtn.onclick = () => {
+      const s = slUserInput.value.trim();
+      const v = viewerNameInput.value.trim();
+      if (!s || !v) {
+        alert("Please fill both your Streamlabs username and your display name.");
+        return;
+      }
+      localStorage.setItem(LS_SL_USER, s);
+      localStorage.setItem(LS_VIEWER_NAME, v);
+      setupBar.style.display = "none";
+    };
+    changeNames.onclick = () => {
+      slUserInput.value = getSLUser();
+      viewerNameInput.value = getViewerName();
+      setupBar.style.display = "inline-flex";
+    };
+    maybeShowSetup();
+
+    // ---- Your hero list (filenames must match your /images exactly) ----
+    const heroes = [
+      { name: "Adam Warlock", img: "images/Adam Warlock.png" },
+      { name: "Angela", img: "images/Angela.png" },
+      { name: "Black Panther", img: "images/Black Panther.png" },
+      { name: "Black Widow", img: "images/Black Widow.png" },
+      { name: "Blade", img: "images/Blade.png" },
+      { name: "Captain America", img: "images/Captain America.png" },
+      { name: "Cloak & Dagger", img: "images/Cloak & Dagger.png" },
+      { name: "Daredevil", img: "images/Daredevil.png" },
+      { name: "Doctor Strange", img: "images/Doctor Strange.png" },
+      { name: "Emma Frost", img: "images/Emma Frost.png" },
+      { name: "Groot", img: "images/Groot.png" },
+      { name: "Hawkeye", img: "images/Hawkeye.png" },
+      { name: "Hela", img: "images/Hela.png" },
+      { name: "Hulk", img: "images/Hulk.png" },
+      { name: "Human Torch", img: "images/Human Torch.png" },
+      { name: "Invisible Woman", img: "images/Invisible Woman.png" },
+      { name: "Iron Fist", img: "images/Iron Fist.png" },
+      { name: "Iron Man", img: "images/Iron Man.png" },
+      { name: "Jeff the Land Shark", img: "images/Jeff the Land Shark.png" },
+      { name: "Loki", img: "images/Loki.png" },
+      { name: "Luna Snow", img: "images/Luna Snow.png" },
+      { name: "Magik", img: "images/Magik.png" },
+      { name: "Magneto", img: "images/Magneto.png" },
+      { name: "Mantis", img: "images/Mantis.png" },
+      { name: "Mister Fantastic", img: "images/Mister Fantastic.png" },
+      { name: "Moon Knight", img: "images/Moon Knight.png" },
+      { name: "Namor", img: "images/Namor.png" },
+      { name: "Peni Parker", img: "images/Peni Parker.png" },
+      { name: "Phoenix", img: "images/Phoenix.png" },
+      { name: "Psylocke", img: "images/Psylocke.png" },
+      { name: "The Punisher", img: "images/The Punisher.png" },
+      { name: "The Thing", img: "images/The Thing.png" },
+      { name: "Rocket Raccoon", img: "images/Rocket Raccoon.png" },
+      { name: "Scarlet Witch", img: "images/Scarlet Witch.png" },
+      { name: "Squirrel Girl", img: "images/Squirrel Girl.png" },
+      { name: "Spider-Man", img: "images/Spider-Man.png" },
+      { name: "Star-Lord", img: "images/Star-Lord.png" },
+      { name: "Storm", img: "images/Storm.png" },
+      { name: "Thor", img: "images/Thor.png" },
+      { name: "Ultron", img: "images/Ultron.png" },
+      { name: "Venom", img: "images/Venom.png" },
+      { name: "Winter Soldier", img: "images/Winter Soldier.png" },
+      { name: "Wolverine", img: "images/Wolverine.png" }
+    ];
+
+    const grid = document.getElementById("heroGrid");
+
+    heroes.forEach(hero => {
+      const card = document.createElement("div");
+      card.className = "hero-card";
+      card.innerHTML = `
+        <img src="${hero.img}" alt="${hero.name}">
+        <div class="hero-name">${hero.name}</div>
+      `;
+
+      card.onclick = async () => {
+        // Ensure we have both user and viewer name
+        let slUser = getSLUser();
+        let viewerName = getViewerName();
+
+        if (!slUser || !viewerName) {
+          // show bar and bail out; user clicks Save then clicks hero again
+          alert("Please set your Streamlabs username and display name first.");
+          slUserInput.value = slUser;
+          viewerNameInput.value = viewerName;
+          setupBar.style.display = "inline-flex";
+          return;
+        }
+
+        // 1) Record last click for fallback matching (viewerName is the Streamlabs display name)
+        try {
+          const donorKey = viewerName.toLowerCase();
+          await firebase.database().ref(`/channels/${CHANNEL}/lastClicks/${donorKey}`).set({
+            hero: hero.name,
+            ts: Date.now()
+          });
+        } catch (e) {
+          console.warn("Failed to write lastClicks:", e);
+        }
+
+        // 2) Open Streamlabs tip page with preset amount & message [Hero]
+        const amount = 5;
+        const msg = encodeURIComponent(`[${hero.name}]`);
+        const tipUrl = `https://streamlabs.com/${encodeURIComponent(slUser)}/tip?amount=${amount}&message=${msg}`;
+        window.open(tipUrl, "_blank");
+      };
+
+      grid.appendChild(card);
+    });
   </script>
 </body>
 </html>
