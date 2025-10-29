@@ -261,7 +261,15 @@
     const settingsRef = ()=> ref(db, `/channels/${cid()}/settings`);
 
     function setOverlayUrl(){ const url=`https://droopy1943.github.io/Hero-picker/overlay.html?channel=${encodeURIComponent(cid())}`; overlayUrlEl.textContent=url; openOverlayA.href=url; }
-    function setViewerLink(){ const ch=cid(), slUser=(slUserInput.value||"").trim(), amt=(slAmountInput.value||"").trim(); viewerLinkEl.textContent=(slUser&&amt&&ch)?`https://droopy1943.github.io/Hero-picker/heroes.html?channel=${encodeURIComponent(ch)}`:"— not generated yet —"; }
+    function setViewerLink() {
+  const ch = cid();
+  const slUser = (slUserInput.value || "").trim();
+  const amt = (slAmountInput.value || "").trim();
+  viewerLinkEl.textContent =
+    slUser && amt && ch
+      ? `https://droopy1943.github.io/Hero-picker/heroes.html?channel=${encodeURIComponent(ch)}&user=${encodeURIComponent(slUser)}`
+      : "— not generated yet —";
+}
 
     function lockAll(locked){["pickerSetupCard","mainSetupCard","queueCard","statusCard"].forEach(id=>$(id).classList.toggle("disabled",!!locked));}
     const isLicensed=()=>statusPill.classList.contains("good");
