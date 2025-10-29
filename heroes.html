@@ -18,31 +18,15 @@
 <body>
   <h1>Pick Your Hero!</h1>
   <div class="grid" id="heroGrid"></div>
-  <div class="foot">Amount is preset to $5. (Message may be ignored by Streamlabs; we still capture your click.)</div>
+  <div class="foot">Amount is preset. Message is auto-filled so you don’t have to type.</div>
 
-  <!-- Firebase (compat for quick drop-in) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
+  <!-- Build the page AFTER we fetch Streamlabs username from Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
-  <script>
-    // --- Firebase init (same project you use everywhere) ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
-      authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
-      databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
-      projectId: "marvel-rivals-overlay-7f867",
-      storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
-      messagingSenderId: "1078364810175",
-      appId: "1:1078364810175:web:fac410007b70b65e348f0a"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    // Resolve channel from ?channel=... (default to "droopy" if omitted)
-    const params = new URLSearchParams(location.search);
-    const channel = params.get("channel") || "droopy";
-
-    // ---- Same hero list you’re using ----
+    // ---- SAME HERO LIST YOU ALREADY USE ----
     const heroes = [
       { name: "Adam Warlock", img: "images/Adam Warlock.png" },
       { name: "Angela", img: "images/Angela.png" },
@@ -50,7 +34,7 @@
       { name: "Black Widow", img: "images/Black Widow.png" },
       { name: "Blade", img: "images/Blade.png" },
       { name: "Captain America", img: "images/Captain America.png" },
-      { name: "Cloak & Dagger", img: "images/Cloak & Dagger.png" },
+      { name: "Cloak & Dagger", img: "images/Cloak & Dagger.png" }, // keep ampersand for your file
       { name: "Daredevil", img: "images/Daredevil.png" },
       { name: "Doctor Strange", img: "images/Doctor Strange.png" },
       { name: "Emma Frost", img: "images/Emma Frost.png" },
@@ -79,8 +63,8 @@
       { name: "Rocket Raccoon", img: "images/Rocket Raccoon.png" },
       { name: "Scarlet Witch", img: "images/Scarlet Witch.png" },
       { name: "Squirrel Girl", img: "images/Squirrel Girl.png" },
-      { name: "Spider-Man", img: "images/Spider-Man.png" },
-      { name: "Star-Lord", img: "images/Star-Lord.png" },
+      { name: "Spider-Man", img: "images/Spider-Man.png" },   // keep hyphen
+      { name: "Star-Lord", img: "images/Star-Lord.png" },     // keep hyphen
       { name: "Storm", img: "images/Storm.png" },
       { name: "Thor", img: "images/Thor.png" },
       { name: "Ultron", img: "images/Ultron.png" },
@@ -89,8 +73,42 @@
       { name: "Wolverine", img: "images/Wolverine.png" }
     ];
 
-    // Render cards
     const grid = document.getElementById("heroGrid");
+
+    // --- Firebase init (same project as queue/overlay) ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
+      authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
+      databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+      projectId: "marvel-rivals-overlay-7f867",
+      storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
+      messagingSenderId: "1078364810175",
+      appId: "1:1078364810175:web:fac410007b70b65e348f0a"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    await signInAnonymously(auth);
+
+    // Which channel are we rendering for?
+    const params = new URLSearchParams(location.search);
+    const channelId = params.get("channel") || "demo";
+
+    // Pull the viewer settings: streamlabsUser + defaultAmount
+    let streamlabsUser = "droopy2"; // fallback so nothing breaks
+    let defaultAmount = 5;
+
+    try {
+      const snap = await get(ref(db, `/channels/${channelId}/settings`));
+      const val = snap.val() || {};
+      if (val.streamlabsUser) streamlabsUser = String(val.streamlabsUser).trim();
+      if (val.defaultAmount) defaultAmount = Number(val.defaultAmount) || 5;
+      console.log("Using Streamlabs user:", streamlabsUser, "amount:", defaultAmount);
+    } catch (e) {
+      console.warn("Could not load settings; using defaults.", e);
+    }
+
+    // Build the hero grid
     heroes.forEach(hero => {
       const card = document.createElement("div");
       card.className = "hero-card";
@@ -98,22 +116,10 @@
         <img src="${hero.img}" alt="${hero.name}">
         <div class="hero-name">${hero.name}</div>
       `;
-      card.onclick = async () => {
-        // 1) Record the click immediately (for donation resolver)
-        try {
-          await db.ref(`/channels/${channel}/recentClicks`).push({
-            hero: hero.name,
-            ts: Date.now()
-          });
-          // If the donor typed their name here, we could also save to lastClicks/{name}.
-          // We’re not requiring that now—time proximity is enough for fallback.
-        } catch (e) {
-          console.warn("recentClicks write failed:", e);
-        }
-
-        // 2) Send them to Streamlabs tip page (message may or may not stick — fine)
-        const msg = encodeURIComponent(`[${hero.name}]`);
-        const tipUrl = `https://streamlabs.com/droopy2/tip?amount=5&message=${msg}`;
+      card.onclick = () => {
+        // Auto-fill Streamlabs with amount + message “[Hero]”
+        const msg = encodeURIComponent(\`[\${hero.name}]\`);
+        const tipUrl = \`https://streamlabs.com/\${encodeURIComponent(streamlabsUser)}/tip?amount=\${encodeURIComponent(defaultAmount)}&message=\${msg}\`;
         window.open(tipUrl, "_blank");
       };
       grid.appendChild(card);
