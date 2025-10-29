@@ -534,19 +534,26 @@
       if (hit) hero = hit;
     }
 
-    // 4) Ultimate fallback: match by donor name against last click saved by heroes.html
-    if (!hero && name && name.toLowerCase() !== "anonymous") {
-      try {
-        const donorKey = name.toLowerCase();
-        const lcSnap = await get(ref(db, `/channels/${cid()}/lastClicks/${donorKey}`));
-        const lcVal = lcSnap.val();
-        if (lcVal && lcVal.hero && (Date.now() - (lcVal.ts || 0) < 10 * 60 * 1000)) {
-          hero = lcVal.hero;
-        }
-      } catch (e) {
-        console.warn("lastClicks lookup failed:", e);
+    // 4) Fallback: if no hero detected, use last clicked hero (even if no message)
+if (!hero && name && name.toLowerCase() !== "anonymous") {
+  try {
+    const donorKey = name.toLowerCase();
+    const lcSnap = await get(ref(db, `/channels/${cid()}/lastClicks/${donorKey}`));
+    const lcVal = lcSnap.val();
+    if (lcVal && lcVal.hero) {
+      const age = Date.now() - (lcVal.ts || 0);
+      if (age < 15 * 60 * 1000) { // valid for 15 minutes
+        hero = lcVal.hero;
+        console.log("🧠 Using last clicked hero for donor:", donorKey, "→", hero);
+      } else {
+        console.log("⏳ Ignored old click for donor:", donorKey, `(age ${Math.round(age/1000)}s)`);
       }
     }
+  } catch (e) {
+    console.warn("⚠️ lastClicks lookup failed:", e);
+  }
+}
+
 
     if (!hero) {
       log(`Donation received but no hero parsed (name="${name}", note="${note}")`);
