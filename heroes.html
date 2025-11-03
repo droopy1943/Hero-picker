@@ -2,30 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Pick Your Hero</title>
+  <title>Marvel Rivals Hero Request</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { margin:0; background:#111; color:#fff; font-family:Arial, sans-serif; }
-    h1 { text-align:center; color:#ffcc00; margin:24px 0 8px; }
-    .sub { text-align:center; color:#bbb; font-size:12px; margin-bottom:18px; }
-    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:18px; padding:0 24px 32px; max-width:1100px; margin:0 auto; }
-    .card { background:#1b1b1b; border:2px solid #333; border-radius:10px; padding:14px; text-align:center; cursor:pointer; transition:transform .15s, border-color .15s; }
-    .card:hover { transform:scale(1.04); border-color:#ffcc00; }
-    .card img { width:120px; height:120px; object-fit:contain; margin-bottom:10px; }
-    .name { font-size:.95rem; }
+    body { font-family: Arial, sans-serif; background:#111; color:#fff; margin:0; padding:20px; text-align:center; }
+    h1 { color:#ffcc00; margin: 10px 0 12px; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:15px; margin:0 auto; max-width:1000px; }
+    .hero-card { background:#222; border:2px solid #444; border-radius:8px; padding:10px; cursor:pointer; transition:transform .2s, border-color .2s; text-align:center; }
+    .hero-card:hover { transform:scale(1.05); border-color:#ffcc00; }
+    .hero-card img { width:100px; height:100px; object-fit:contain; margin-bottom:8px; }
+    .hero-name { font-size:.9rem; color:#fff; }
+    .foot { margin-top:14px; color:#aaa; font-size:12px; }
   </style>
-</head>
-<body>
-  <h1>Pick Your Hero!</h1>
-  <div class="sub">Amount is preset. Message is auto-filled so you don’t have to type.</div>
-  <div id="grid" class="grid"></div>
 
-  <!-- Firebase (compat not needed here) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-
-    // --- Config (unchanged) ---
+  <!-- Firebase (compat) for quick drop-in -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
+  <script>
+    // Same config you use everywhere else
     const firebaseConfig = {
       apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
       authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
@@ -35,59 +30,92 @@
       messagingSenderId: "1078364810175",
       appId: "1:1078364810175:web:fac410007b70b65e348f0a"
     };
+    firebase.initializeApp(firebaseConfig);
 
-    const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
+    // Anonymous auth so rules allow writing lastClicks
+    firebase.auth().signInAnonymously().catch(console.warn);
 
-    // --- Channel from URL ---
-    const params = new URLSearchParams(location.search);
-    const channel = (params.get("channel") || "demo").trim();
+    // Read ?channel= from URL (falls back to "demo")
+    const params  = new URLSearchParams(location.search);
+    const CHANNEL = params.get("channel") || "demo";
+  </script>
+</head>
+<body>
+  <h1>Pick Your Hero!</h1>
+  <div class="grid" id="heroGrid"></div>
+  <div class="foot">Amount is preset to $5. Message is auto-filled so you don’t have to type.</div>
 
-    // --- Heroes list (filenames must match your /images folder exactly) ---
-    const HEROES = [
-      "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America",
-      "Cloak & Dagger","Daredevil","Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk",
-      "Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark","Loki","Luna Snow",
-      "Magik","Magneto","Mantis","Mister Fantastic","Moon Knight","Namor","Peni Parker","Phoenix",
-      "Psylocke","The Punisher","The Thing","Rocket Raccoon","Scarlet Witch","Squirrel Girl",
-      "Spider-Man","Star-Lord","Storm","Thor","Ultron","Venom","Winter Soldier","Wolverine"
+  <script>
+    // Keep your existing hero list & image paths
+    const heroes = [
+      { name: "Adam Warlock", img: "images/Adam Warlock.png" },
+      { name: "Angela", img: "images/Angela.png" },
+      { name: "Black Panther", img: "images/Black Panther.png" },
+      { name: "Black Widow", img: "images/Black Widow.png" },
+      { name: "Blade", img: "images/Blade.png" },
+      { name: "Captain America", img: "images/Captain America.png" },
+      { name: "Cloak & Dagger", img: "images/Cloak & Dagger.png" },
+      { name: "Daredevil", img: "images/Daredevil.png" },
+      { name: "Doctor Strange", img: "images/Doctor Strange.png" },
+      { name: "Emma Frost", img: "images/Emma Frost.png" },
+      { name: "Groot", img: "images/Groot.png" },
+      { name: "Hawkeye", img: "images/Hawkeye.png" },
+      { name: "Hela", img: "images/Hela.png" },
+      { name: "Hulk", img: "images/Hulk.png" },
+      { name: "Human Torch", img: "images/Human Torch.png" },
+      { name: "Invisible Woman", img: "images/Invisible Woman.png" },
+      { name: "Iron Fist", img: "images/Iron Fist.png" },
+      { name: "Iron Man", img: "images/Iron Man.png" },
+      { name: "Jeff the Land Shark", img: "images/Jeff the Land Shark.png" },
+      { name: "Loki", img: "images/Loki.png" },
+      { name: "Luna Snow", img: "images/Luna Snow.png" },
+      { name: "Magik", img: "images/Magik.png" },
+      { name: "Magneto", img: "images/Magneto.png" },
+      { name: "Mantis", img: "images/Mantis.png" },
+      { name: "Mister Fantastic", img: "images/Mister Fantastic.png" },
+      { name: "Moon Knight", img: "images/Moon Knight.png" },
+      { name: "Namor", img: "images/Namor.png" },
+      { name: "Peni Parker", img: "images/Peni Parker.png" },
+      { name: "Phoenix", img: "images/Phoenix.png" },
+      { name: "Psylocke", img: "images/Psylocke.png" },
+      { name: "The Punisher", img: "images/The Punisher.png" },
+      { name: "The Thing", img: "images/The Thing.png" },
+      { name: "Rocket Raccoon", img: "images/Rocket Raccoon.png" },
+      { name: "Scarlet Witch", img: "images/Scarlet Witch.png" },
+      { name: "Squirrel Girl", img: "images/Squirrel Girl.png" },
+      { name: "Spider-Man", img: "images/Spider-Man.png" },
+      { name: "Star-Lord", img: "images/Star-Lord.png" },
+      { name: "Storm", img: "images/Storm.png" },
+      { name: "Thor", img: "images/Thor.png" },
+      { name: "Ultron", img: "images/Ultron.png" },
+      { name: "Venom", img: "images/Venom.png" },
+      { name: "Winter Soldier", img: "images/Winter Soldier.png" },
+      { name: "Wolverine", img: "images/Wolverine.png" }
     ];
 
-    const grid = document.getElementById("grid");
+    const grid = document.getElementById("heroGrid");
 
-    // Build cards
-    function renderCards(tipUser, amount) {
-      grid.innerHTML = "";
-      HEROES.forEach(name => {
-        const card = document.createElement("div");
-        card.className = "card";
-        const safeSrc = `images/${name}.png`; // your files use spaces/hyphens/& as in name
-        card.innerHTML = `
-          <img src="${safeSrc}" alt="${name}">
-          <div class="name">${name}</div>
-        `;
-        card.onclick = () => {
-          const msg = encodeURIComponent(`[${name}]`);
-          const url = `https://streamlabs.com/${encodeURIComponent(tipUser)}/tip?amount=${encodeURIComponent(amount)}&message=${msg}`;
-          window.open(url, "_blank", "noopener");
-        };
-        grid.appendChild(card);
-      });
-    }
+    heroes.forEach(hero => {
+      const card = document.createElement("div");
+      card.className = "hero-card";
+      card.innerHTML = `
+        <img src="${hero.img}" alt="${hero.name}">
+        <div class="hero-name">${hero.name}</div>
+      `;
+      card.onclick = () => {
+        // ✅ Save hero choice as a fallback so test alerts (donor "Streamlabs") and real alerts work without typing
+        firebase.database().ref(`/channels/${CHANNEL}/lastClicks/streamlabs`).set({
+          hero: hero.name,
+          ts: Date.now()
+        });
 
-    // Load tip username + amount from Firebase settings, then render
-    (async () => {
-      try {
-        const snap = await get(ref(db, `/channels/${channel}/settings`));
-        const s = snap.val() || {};
-        const tipUser = (s.streamlabsUser || channel).trim(); // fallback to channel
-        const amount  = String(s.defaultAmount || 5).trim();  // fallback to $5
-        renderCards(tipUser, amount);
-      } catch (e) {
-        console.warn("Settings load failed, using defaults:", e);
-        renderCards(channel, 5);
-      }
-    })();
+        // Open Streamlabs tip page for THIS channel (no hardcode)
+        const msg   = encodeURIComponent(\`[\${hero.name}]\`); // still fine to keep
+        const tipUrl = \`https://streamlabs.com/\${encodeURIComponent(CHANNEL)}/tip?amount=5&message=\${msg}\`;
+        window.open(tipUrl, "_blank");
+      };
+      grid.appendChild(card);
+    });
   </script>
 </body>
 </html>
