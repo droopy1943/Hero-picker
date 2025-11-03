@@ -217,6 +217,14 @@
     const db  = getDatabase(app);
     const auth = getAuth(app);
     await signInAnonymously(auth);
+    // Allowlist this browser sessions so rules permit reads/writes
+async function grantsessions(ch) {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
+  // NOTE: matches your rules: /channels/<ch>/sessions/<uid>
+  await set(ref(db, `/channels/${ch}/sessions/${uid}`), true);
+}
+
 
     // --- Helpers / refs ---
     const $=id=>document.getElementById(id);
@@ -305,6 +313,23 @@
           $("licenseCard").classList.add("hidden");
           lockAll(false);
           setOverlayUrl(); setViewerLink();
+          statusPill.textContent="Licensed";
+statusPill.className="status-pill good";
+licenseMsg.textContent=(val.assignedTo?`Licensed for ${val.assignedTo}`:"");
+licenseMsg.className="license-msg good";
+$("resetLicense").classList.remove("hidden");
+$("licenseCard").classList.add("hidden");
+lockAll(false);
+setOverlayUrl(); 
+setViewerLink();
+
+// ✅ ADD THIS LINE:
+await grantsessions(ch);
+
+// then the existing line is safe:
+await ensurePaths(ch);
+resubscribeQueue();
+
           await ensurePaths(ch);
           // After ensurePaths(ch); add this line:
 await set(ref(db, `/channels/${ch}/sessions/${auth.currentUser.uid}`), true);
