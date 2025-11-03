@@ -306,6 +306,9 @@
           lockAll(false);
           setOverlayUrl(); setViewerLink();
           await ensurePaths(ch);
+          // After ensurePaths(ch); add this line:
+await set(ref(db, `/channels/${ch}/sessions/${auth.currentUser.uid}`), true);
+
           resubscribeQueue();
           return true;
         } else {
