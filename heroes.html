@@ -14,13 +14,24 @@
     .hero-name { font-size:.9rem; color:#fff; }
     .foot { margin-top:14px; color:#aaa; font-size:12px; }
   </style>
+</head>
+<body>
+  <h1>Pick Your Hero!</h1>
+  <div class="grid" id="heroGrid"></div>
+  <div class="foot">Amount is preset to $5. Message is auto-filled so you don’t have to type.</div>
 
-  <!-- Firebase (compat) for quick drop-in -->
+  <!-- Firebase (compat for drop-in) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
+
   <script>
-    // Same config you use everywhere else
+    // --- Params ---
+    const params  = new URLSearchParams(location.search);
+    const CHANNEL = params.get('channel') || 'demo';         // your Firebase channel
+    const SL_USER = params.get('user') || CHANNEL;           // Streamlabs username for the tip page
+
+    // --- Firebase init ---
     const firebaseConfig = {
       apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
       authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
@@ -30,23 +41,14 @@
       messagingSenderId: "1078364810175",
       appId: "1:1078364810175:web:fac410007b70b65e348f0a"
     };
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 
-    // Anonymous auth so rules allow writing lastClicks
-    firebase.auth().signInAnonymously().catch(console.warn);
+    // Anonymous auth (lets viewers write lastClicks under your new rules)
+    firebase.auth().signInAnonymously().catch(function(err){
+      console.warn("Anonymous sign-in failed:", err && err.message ? err.message : err);
+    });
 
-    // Read ?channel= from URL (falls back to "demo")
-    const params  = new URLSearchParams(location.search);
-    const CHANNEL = params.get("channel") || "demo";
-  </script>
-</head>
-<body>
-  <h1>Pick Your Hero!</h1>
-  <div class="grid" id="heroGrid"></div>
-  <div class="foot">Amount is preset to $5. Message is auto-filled so you don’t have to type.</div>
-
-  <script>
-    // Keep your existing hero list & image paths
+    // --- Hero list (file names must match your /images folder) ---
     const heroes = [
       { name: "Adam Warlock", img: "images/Adam Warlock.png" },
       { name: "Angela", img: "images/Angela.png" },
@@ -93,27 +95,26 @@
       { name: "Wolverine", img: "images/Wolverine.png" }
     ];
 
+    // --- Render grid ---
     const grid = document.getElementById("heroGrid");
-
-    heroes.forEach(hero => {
+    heroes.forEach(function(hero){
       const card = document.createElement("div");
       card.className = "hero-card";
-      card.innerHTML = `
-        <img src="${hero.img}" alt="${hero.name}">
-        <div class="hero-name">${hero.name}</div>
-      `;
-      card.onclick = () => {
-        // ✅ Save hero choice as a fallback so test alerts (donor "Streamlabs") and real alerts work without typing
-        firebase.database().ref(`/channels/${CHANNEL}/lastClicks/streamlabs`).set({
-          hero: hero.name,
-          ts: Date.now()
-        });
+      card.innerHTML = '<img src="'+hero.img+'" alt="'+hero.name+'"><div class="hero-name">'+hero.name+'</div>';
 
-        // Open Streamlabs tip page for THIS channel (no hardcode)
-        const msg   = encodeURIComponent(\`[\${hero.name}]\`); // still fine to keep
-        const tipUrl = \`https://streamlabs.com/\${encodeURIComponent(CHANNEL)}/tip?amount=5&message=\${msg}\`;
-        window.open(tipUrl, "_blank");
+      card.onclick = function(){
+        // Save hero choice for fallback (test replays use donor "Streamlabs")
+        firebase.database()
+          .ref('/channels/'+encodeURIComponent(CHANNEL)+'/lastClicks/streamlabs')
+          .set({ hero: hero.name, ts: Date.now() })
+          .catch(function(e){ console.warn('lastClicks write failed:', e && e.message ? e.message : e); });
+
+        // Open Streamlabs tip page
+        var msg = encodeURIComponent('['+hero.name+']'); // optional but still helpful
+        var tipUrl = 'https://streamlabs.com/'+encodeURIComponent(SL_USER)+'/tip?amount=5&message='+msg;
+        window.open(tipUrl, '_blank');
       };
+
       grid.appendChild(card);
     });
   </script>
