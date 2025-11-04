@@ -112,6 +112,13 @@
         // Open Streamlabs tip page
         var msg = encodeURIComponent('['+hero.name+']'); // optional but still helpful
         var tipUrl = 'https://streamlabs.com/'+encodeURIComponent(SL_USER)+'/tip?amount=5&message='+msg;
+        // Save last click for fallback logic
+firebase.database().ref(`/channels/${channel}/lastClicks/streamlabs`).set({
+  hero: hero.name,
+  ts: Date.now()
+}).then(() => console.log("✅ lastClicks saved:", hero.name))
+.catch(e => console.warn("⚠️ lastClicks write failed:", e));
+
         window.open(tipUrl, '_blank');
       };
 
