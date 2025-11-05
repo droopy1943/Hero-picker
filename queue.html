@@ -206,24 +206,72 @@
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
   <script type="module">
-    // ===== MODULE SCRIPT (keeps everything neat and working) =====
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getDatabase, ref, onValue, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+  /* keep your other imports & code as-is */
 
-    // --- Firebase init ---
-    const firebaseConfig = { apiKey:"AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE", authDomain:"marvel-rivals-overlay-7f867.firebaseapp.com", databaseURL:"https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com", projectId:"marvel-rivals-overlay-7f867", storageBucket:"marvel-rivals-overlay-7f867.appspot.com", messagingSenderId:"1078364810175", appId:"1:1078364810175:web:fac410007b70b65e348f0a" };
-    const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
-    const auth = getAuth(app);
-    await signInAnonymously(auth);
-    // Allowlist this browser sessions so rules permit reads/writes
-async function grantsessions(ch) {
-  const uid = auth.currentUser?.uid;
-  if (!uid) return;
-  // NOTE: matches your rules: /channels/<ch>/sessions/<uid>
-  await set(ref(db, `/channels/${ch}/sessions/${uid}`), true);
-}
+  async function verifyLicense(manual = false){
+    const key = licenseKeyInput.value.trim();
+    const ch  = licenseChannelInput.value.trim();
+    if(!key || !ch){
+      licenseMsg.textContent = "⚠️ Please enter both fields.";
+      licenseMsg.className   = "license-msg bad";
+      statusPill.textContent = "Unlicensed";
+      statusPill.className   = "status-pill bad";
+      lockAll(true);
+      return false;
+    }
+
+    try {
+      const snap = await get(ref(db, `/channels/${ch}/licenses/${key}`));
+      const val  = snap.val();
+
+      if (val && (val.active === true || val.valid === true)) {
+        localStorage.setItem(LICENSE_KEY, JSON.stringify({ key, channel: ch }));
+
+        statusPill.textContent = "Licensed";
+        statusPill.className   = "status-pill good";
+        licenseMsg.textContent = (val.assignedTo ? `Licensed for ${val.assignedTo}` : "");
+        licenseMsg.className   = "license-msg good";
+        $("resetLicense").classList.remove("hidden");
+        $("licenseCard").classList.add("hidden");
+        lockAll(false);
+
+        setOverlayUrl();
+        setViewerLink();
+
+        // Ensure required paths exist
+        await ensurePaths(ch);
+
+        // ✅ NEW: allowlist this session’s UID so rules permit admin reads/writes
+        const uid = auth.currentUser?.uid;
+        if (uid) {
+          await set(ref(db, `/channels/${ch}/sessions/${uid}`), true);
+        }
+
+        // Resubscribe with the now-licensed channel
+        resubscribeQueue();
+        return true;
+      } else {
+        licenseMsg.textContent = "❌ Invalid or inactive key.";
+        licenseMsg.className   = "license-msg bad";
+        statusPill.textContent = "Unlicensed";
+        statusPill.className   = "status-pill bad";
+        lockAll(true);
+        return false;
+      }
+    } catch (e) {
+      console.error("License verify error:", e);
+      licenseMsg.textContent = "⚠️ Network error — try again.";
+      licenseMsg.className   = "license-msg bad";
+      statusPill.textContent = "Unlicensed";
+      statusPill.className   = "status-pill bad";
+      lockAll(true);
+      return false;
+    }
+  }
+
+  // keep the rest of your file exactly the same
+</script>
+
 
 
     // --- Helpers / refs ---
