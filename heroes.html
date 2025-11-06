@@ -14,19 +14,19 @@
     .hero-name { font-size:.9rem; color:#fff; }
     .foot { margin-top:14px; color:#aaa; font-size:12px; }
   </style>
-
-  <!-- Firebase (compat for simple drop-in) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
 </head>
 <body>
   <h1>Pick Your Hero!</h1>
   <div class="grid" id="heroGrid"></div>
+  <div class="foot">Amount is preset. Message is auto-filled for reliability.</div>
+
+  <!-- Firebase compat for simple drop-in -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
 
   <script>
-  (async function () {
-    // --- Config / Params ---
+    /* Firebase init */
     const firebaseConfig = {
       apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
       authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
@@ -36,24 +36,29 @@
       messagingSenderId: "1078364810175",
       appId: "1:1078364810175:web:fac410007b70b65e348f0a"
     };
+    firebase.initializeApp(firebaseConfig);
 
-    // Parse URL params once
-    const qs = new URLSearchParams(location.search);
-    const CHANNEL = (qs.get('channel') || 'demo').trim();
-    // Streamlabs username to tip; default to the same as channel unless overridden
-    const USER = (qs.get('user') || CHANNEL).trim();
-    // Default amount ($)
-    const AMOUNT = Number(qs.get('amount') || '5') || 5;
+    // anon auth to satisfy rules for lastClicks
+    firebase.auth().signInAnonymously().catch(console.warn);
 
-    // --- Firebase boot ---
-    try {
-      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-      await firebase.auth().signInAnonymously().catch(()=>{});
-    } catch (e) {
-      console.warn('Firebase init/auth error:', e);
-    }
+    const params = new URLSearchParams(location.search);
+    const CHANNEL = params.get('channel') || 'demo';
 
-    // --- Hero list (filenames must exist under /images) ---
+    // Try to read Streamlabs username + amount from settings; fallback to URL params; default
+    let SL_USER = params.get('user') || '';
+    let AMOUNT  = params.get('amount') || '';
+
+    (async () => {
+      try {
+        const snap = await firebase.database().ref(`/channels/${CHANNEL}/settings`).get();
+        const s = snap.val() || {};
+        if (s.streamlabsUser && !SL_USER) SL_USER = String(s.streamlabsUser);
+        if (s.defaultAmount && !AMOUNT)  AMOUNT  = String(s.defaultAmount);
+      } catch (e) { /* non-fatal */ }
+      if (!SL_USER) SL_USER = 'droopy2';  // last resort
+      if (!AMOUNT)  AMOUNT  = '5';
+    })();
+
     const heroes = [
       { name: "Adam Warlock", img: "images/Adam Warlock.png" },
       { name: "Angela", img: "images/Angela.png" },
@@ -100,7 +105,6 @@
       { name: "Wolverine", img: "images/Wolverine.png" }
     ];
 
-    // --- Render grid ---
     const grid = document.getElementById("heroGrid");
     heroes.forEach(hero => {
       const card = document.createElement("div");
@@ -109,24 +113,23 @@
         <img src="${hero.img}" alt="${hero.name}">
         <div class="hero-name">${hero.name}</div>
       `;
-      card.onclick = () => {
-        // Save hero choice for test-replay fallback (donor “Streamlabs”)
+      card.onclick = async () => {
         try {
-          firebase.database()
+          // Save hero choice for fallback (so replayed test donations work without typing)
+          await firebase.database()
             .ref(`/channels/${CHANNEL}/lastClicks/streamlabs`)
-            .set({ hero: hero.name, ts: Date.now() })
-            .catch(()=>{});
-        } catch {}
+            .set({ hero: hero.name, ts: Date.now() });
+        } catch (e) {
+          // ignore (viewer might not be signed in yet)
+        }
 
-        // Open Streamlabs tip page
-        // If you want the message-free route to still work, we keep [Hero] here.
+        // Open Streamlabs tip page; we still include [Hero] to maximize parsing reliability.
         const msg = encodeURIComponent(`[${hero.name}]`);
-        const tipUrl = `https://streamlabs.com/${encodeURIComponent(USER)}/tip?amount=${AMOUNT}&message=${msg}`;
+        const tipUrl = `https://streamlabs.com/${encodeURIComponent(SL_USER)}/tip?amount=${encodeURIComponent(AMOUNT)}&message=${msg}`;
         window.open(tipUrl, "_blank");
       };
       grid.appendChild(card);
     });
-  })();
   </script>
 </body>
 </html>
