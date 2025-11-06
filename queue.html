@@ -155,7 +155,7 @@
             <option value="">Select a hero...</option>
             <option>Adam Warlock</option><option>Angela</option><option>Black Panther</option>
             <option>Black Widow</option><option>Blade</option><option>Captain America</option>
-            <option>Cloak & Dagger</option><option>Doctor Strange</option><option>Emma Frost</option>
+            <option>Cloak & Dagger</option><option>Daredevil</option><option>Doctor Strange</option><option>Emma Frost</option>
             <option>Groot</option><option>Hawkeye</option><option>Hela</option><option>Hulk</option>
             <option>Human Torch</option><option>Invisible Woman</option><option>Iron Fist</option>
             <option>Iron Man</option><option>Jeff the Land Shark</option><option>Loki</option>
@@ -199,31 +199,38 @@
 
   <div class="watermark">
     <a href="https://twitch.tv/droopy" target="_blank" rel="noopener"><span>Created by: <strong>Droopy</strong></span><span class="twitch-dot" title="Twitch"></span></a>
-    <div>v1.5.1</div>
+    <div>v1.5.2</div>
   </div>
 
   <div class="toast" id="toast">Saved</div>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
   <script type="module">
-    // ===== MODULE SCRIPT (keeps everything neat and working) =====
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getDatabase, ref, onValue, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
-    // --- Firebase init ---
-    const firebaseConfig = { apiKey:"AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE", authDomain:"marvel-rivals-overlay-7f867.firebaseapp.com", databaseURL:"https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com", projectId:"marvel-rivals-overlay-7f867", storageBucket:"marvel-rivals-overlay-7f867.appspot.com", messagingSenderId:"1078364810175", appId:"1:1078364810175:web:fac410007b70b65e348f0a" };
+    /* ---- Firebase init ---- */
+    const firebaseConfig = {
+      apiKey:"AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
+      authDomain:"marvel-rivals-overlay-7f867.firebaseapp.com",
+      databaseURL:"https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+      projectId:"marvel-rivals-overlay-7f867",
+      storageBucket:"marvel-rivals-overlay-7f867.appspot.com",
+      messagingSenderId:"1078364810175",
+      appId:"1:1078364810175:web:fac410007b70b65e348f0a"
+    };
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
     const auth = getAuth(app);
     await signInAnonymously(auth);
 
-    // --- Helpers / refs ---
+    /* ---- DOM helpers ---- */
     const $=id=>document.getElementById(id);
     const toast=$("toast"); const statusPill=$("licenseStatus"); const licenseMsg=$("licenseMsg");
     const licenseKeyInput=$("licenseKey"), licenseChannelInput=$("licenseChannel"); const LICENSE_KEY="mr_license";
     const slUserInput=$("slUser"), slAmountInput=$("slAmount"), pickerSavedMsg=$("pickerSavedMsg"), viewerLinkEl=$("viewerLink");
-    const toggleSetupBtn=$("toggleSetup"), setupBody=$("setupBody"), channelIdInput=$("channelId"), slTokenInput=$("slToken"), setupStatus=$("setupStatus"), overlayUrlEl=$("overlayUrl"), openOverlayA=$("openOverlay");
+    const channelIdInput=$("channelId"), slTokenInput=$("slToken"), setupStatus=$("setupStatus"), overlayUrlEl=$("overlayUrl"), openOverlayA=$("openOverlay");
     const manualHero=$("manualHero"), manualDonor=$("manualDonor"), queueList=$("queueList"), liveStatus=$("liveStatus");
     const CFG_KEY="mr_cfg", PKR_KEY="mr_picker";
 
@@ -231,7 +238,7 @@
     function sanitize(s){return (s||"").replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]) )}
     function log(msg){ $("log").textContent=`[${new Date().toLocaleTimeString()}] ${msg}\n`+($("log").textContent||""); }
 
-    // Tooltip
+    /* Tooltip (unchanged) */
     const tokenHelpIcon = $("tokenHelpIcon"), tokenTooltip = $("tokenTooltip");
     let ttVisible=false;
     tokenHelpIcon?.addEventListener("click", ()=>{ ttVisible=!ttVisible; tokenTooltip.classList.toggle("show", ttVisible); positionTooltip(); });
@@ -247,26 +254,30 @@
       tokenTooltip.style.top  = (rect.top  - parentRect.top  - 4) + "px";
     }
 
-    // Load cached config
+    /* Load cached config */
     const cfg=JSON.parse(localStorage.getItem(CFG_KEY)||"{}");
     const pkr=JSON.parse(localStorage.getItem(PKR_KEY)||"{}");
     if(cfg.channelId) channelIdInput.value=cfg.channelId; if(cfg.slToken) slTokenInput.value=cfg.slToken;
     if(pkr.slUser) slUserInput.value=pkr.slUser; if(pkr.amount) slAmountInput.value=pkr.amount;
 
-    // License + DB path helpers
+    /* License + DB path helpers */
     const savedLic = JSON.parse(localStorage.getItem(LICENSE_KEY)||"null");
     const cid = () => (channelIdInput.value||"").trim() || savedLic?.channel || "demo";
     const qRef = ()=> ref(db, `/channels/${cid()}/queue`);
     const curRef = ()=> ref(db, `/channels/${cid()}/current`);
     const settingsRef = ()=> ref(db, `/channels/${cid()}/settings`);
+    const sessionRef = ()=> ref(db, `/channels/${cid()}/sessions/${auth.currentUser?.uid||"anon"}`);
 
     function setOverlayUrl(){ const url=`https://droopy1943.github.io/Hero-picker/overlay.html?channel=${encodeURIComponent(cid())}`; overlayUrlEl.textContent=url; openOverlayA.href=url; }
-    function setViewerLink(){ const ch=cid(), slUser=(slUserInput.value||"").trim(), amt=(slAmountInput.value||"").trim(); viewerLinkEl.textContent=(slUser&&amt&&ch)?`https://droopy1943.github.io/Hero-picker/heroes.html?channel=${encodeURIComponent(ch)}`:"— not generated yet —"; }
+    function setViewerLink(){
+      const ch=cid(), slUser=(slUserInput.value||"").trim(), amt=(slAmountInput.value||"").trim();
+      viewerLinkEl.textContent=(slUser&&amt&&ch)?`https://droopy1943.github.io/Hero-picker/heroes.html?channel=${encodeURIComponent(ch)}`:"— not generated yet —";
+    }
 
     function lockAll(locked){["pickerSetupCard","mainSetupCard","queueCard","statusCard"].forEach(id=>$(id).classList.toggle("disabled",!!locked));}
     const isLicensed=()=>statusPill.classList.contains("good");
 
-    // Ensure paths exist (queue/current/settings)
+    /* Ensure minimal paths exist */
     async function ensurePaths(ch){
       const [qs, cs, ss] = await Promise.all([
         get(ref(db, `/channels/${ch}/queue`)),
@@ -278,61 +289,43 @@
       if(!ss.exists()) await set(ref(db, `/channels/${ch}/settings`), {});
     }
 
-    // ====== PERMANENT FIX: verifyLicense checks channel path AND global path ======
-    async function verifyLicense(manual = false){
-      const key = licenseKeyInput.value.trim();
-      const ch  = licenseChannelInput.value.trim();
+    /* License verify: checks BOTH /channels/<ch>/licenses/<key> and /licenses/<key> */
+    async function verifyLicense(manual=false){
+      const key=licenseKeyInput.value.trim(), ch=licenseChannelInput.value.trim();
+      if(!key||!ch){
+        licenseMsg.textContent="⚠️ Please enter both fields."; licenseMsg.className="license-msg bad";
+        statusPill.textContent="Unlicensed"; statusPill.className="status-pill bad"; lockAll(true); return false;
+      }
+      try{
+        const chanSnap = await get(ref(db, `/channels/${ch}/licenses/${key}`));
+        const globSnap = await get(ref(db, `/licenses/${key}`));
+        const cVal = chanSnap.val(), gVal = globSnap.val();
+        const valid = (cVal && (cVal.active===true || cVal.valid===true)) || (gVal && (gVal.active===true || gVal.valid===true));
 
-      const fail = (msg) => {
-        licenseMsg.textContent = msg;
-        licenseMsg.className   = "license-msg bad";
-        statusPill.textContent = "Unlicensed";
-        statusPill.className   = "status-pill bad";
-        lockAll(true);
-        return false;
-      };
-
-      if (!key || !ch) return fail("⚠️ Please enter both fields.");
-
-      try {
-        // Try per-channel first
-        const pathA = `/channels/${ch}/licenses/${key}`;
-        const snapA = await get(ref(db, pathA));
-        let val = snapA.val();
-
-        // Fallback to global path
-        if (!val) {
-          const pathB = `/licenses/${key}`;
-          const snapB = await get(ref(db, pathB));
-          val = snapB.val();
-          if (val) console.log(`[license] Found at global path /licenses/${key}`);
+        if(valid){
+          localStorage.setItem(LICENSE_KEY, JSON.stringify({ key, channel: ch }));
+          statusPill.textContent="Licensed"; statusPill.className="status-pill good";
+          licenseMsg.textContent=(gVal?.assignedTo?`Licensed for ${gVal.assignedTo}`:"");
+          licenseMsg.className="license-msg good";
+          $("resetLicense").classList.remove("hidden");
+          $("licenseCard").classList.add("hidden");
+          // allowlist this session for admin writes
+          await set(sessionRef(), true);
+          lockAll(false);
+          setOverlayUrl(); setViewerLink();
+          await ensurePaths(ch);
+          resubscribeQueue();
+          return true;
         } else {
-          console.log(`[license] Found at channel path ${pathA}`);
+          licenseMsg.textContent="❌ Invalid or inactive key."; licenseMsg.className="license-msg bad";
+          statusPill.textContent="Unlicensed"; statusPill.className="status-pill bad"; lockAll(true); return false;
         }
-
-        const ok = (v) => v === true || (typeof v === "object" && v && (v.active === true || v.valid === true));
-        if (!ok(val)) return fail("❌ Invalid or inactive key.");
-
-        localStorage.setItem(LICENSE_KEY, JSON.stringify({ key, channel: ch }));
-        statusPill.textContent = "Licensed";
-        statusPill.className   = "status-pill good";
-        licenseMsg.textContent = (val.assignedTo ? `Licensed for ${val.assignedTo}` : "");
-        licenseMsg.className   = "license-msg good";
-        $("resetLicense").classList.remove("hidden");
-        $("licenseCard").classList.add("hidden");
-        lockAll(false);
-
-        setOverlayUrl();
-        setViewerLink();
-        await ensurePaths(ch);
-        resubscribeQueue();
-        return true;
-      } catch (e) {
-        console.error("License verify error:", e);
-        return fail("⚠️ Network / rules error — check Firebase rules allow READ on /channels/<channel>/licenses/<key> or /licenses/<key>.");
+      }catch(e){
+        console.error("License verify error:",e);
+        licenseMsg.textContent="⚠️ Network error — try again."; licenseMsg.className="license-msg bad";
+        statusPill.textContent="Unlicensed"; statusPill.className="status-pill bad"; lockAll(true); return false;
       }
     }
-    // ==============================================================================
 
     $("verifyLicense").onclick=()=>verifyLicense(true);
     $("resetLicense").onclick=()=>{
@@ -353,24 +346,25 @@
       setOverlayUrl(); setViewerLink();
     })();
 
-    // ---- Auto-saves (unchanged) ----
+    /* ---- Auto-saves ---- */
     function debounce(fn,ms=600){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; }
 
-    const autoSavePicker=debounce(()=>{
+    const autoSavePicker=debounce(async()=>{
       if(!isLicensed()) return;
       const slUser=(slUserInput.value||"").trim(), amount=(slAmountInput.value||"").trim();
       if(!slUser||!amount) return;
       localStorage.setItem(PKR_KEY, JSON.stringify({ slUser, amount }));
-      set(settingsRef(), { streamlabsUser: slUser, defaultAmount: amount, channelId: cid() }).then(()=>{
-        pickerSavedMsg.textContent="Saved ✔"; setViewerLink(); setTimeout(()=>pickerSavedMsg.textContent="",1400);
-      });
+      await set(settingsRef(), { streamlabsUser: slUser, defaultAmount: amount, channelId: cid() });
+      pickerSavedMsg.textContent="Saved ✔"; setViewerLink(); setTimeout(()=>pickerSavedMsg.textContent="",1400);
     });
 
-    const autoSaveCfg=debounce(()=>{
+    const autoSaveCfg=debounce(async()=>{
       if(!isLicensed()) return;
       const payload={ channelId:(channelIdInput.value||"").trim(), slToken:(slTokenInput.value||"").trim() };
       localStorage.setItem(CFG_KEY, JSON.stringify(payload));
       setOverlayUrl(); setViewerLink(); setupStatus.textContent="Saved ✔"; setupStatus.style.color="#2ecc71";
+      // make sure session allowlist persists if channel changes
+      await set(sessionRef(), true);
       setTimeout(()=>{ setupStatus.textContent=""; setupStatus.removeAttribute("style"); },1400);
       resubscribeQueue();
     });
@@ -386,21 +380,16 @@
     $("copyViewer").onclick=async()=>{ try{await navigator.clipboard.writeText($("viewerLink").textContent); $("copyViewer").textContent="Copied!"; setTimeout(()=>{$("copyViewer").textContent="Copy"},900);}catch{} };
     $("copyOverlay").onclick=async()=>{ try{await navigator.clipboard.writeText($("overlayUrl").textContent); $("copyOverlay").textContent="Copied!"; setTimeout(()=>{$("copyOverlay").textContent="Copy"},900);}catch{} };
 
-    $("toggleSetup").onclick=()=>{ const hide=!setupBody.classList.contains("hidden"); setupBody.classList.toggle("hidden",hide); $("toggleSetup").textContent=hide?"Expand":"Collapse"; };
+    $("toggleSetup").onclick=()=>{ const hide=!$("setupBody").classList.contains("hidden"); $("setupBody").classList.toggle("hidden",hide); $("toggleSetup").textContent=hide?"Expand":"Collapse"; };
     $("clearPickerSetup").onclick=()=>{ localStorage.removeItem(PKR_KEY); slUserInput.value=""; slAmountInput.value=""; setViewerLink(); pickerSavedMsg.textContent=""; showToast("🧹 Picker setup cleared"); };
 
-    // =========================
-    // STATE for auto-promote ONLY when queue goes empty->non-empty
-    // =========================
+    /* ======= Auto-promote logic (first only when queue transitions empty → non-empty) ======= */
     let currentState = null;
     let latestQueueItems = [];
     let autoPromoteBusy = false;
     let prevQueueCount = 0;
 
-    // Keep a live copy of current
-    onValue(curRef(), (snap) => {
-      currentState = snap.val() || null;
-    });
+    onValue(curRef(), (snap) => { currentState = snap.val() || null; });
 
     function isIdleCurrent(val) {
       const h = (val && val.hero) ? String(val.hero).trim() : "";
@@ -417,7 +406,6 @@
       autoPromoteBusy = true;
       try {
         const first = latestQueueItems[0];
-        // Show on overlay but KEEP it in the queue
         await set(curRef(), {
           hero: first.hero,
           donor: first.donor || "",
@@ -432,7 +420,7 @@
       }
     }
 
-    // ---- Queue subscribe & render ----
+    /* ---- Queue subscribe & render ---- */
     let unsub=null;
     function resubscribeQueue(){
       if(unsub) unsub();
@@ -445,9 +433,7 @@
         renderQueue(items);
 
         const justBecameNonEmpty = (prevQueueCount === 0 && items.length > 0);
-        if (justBecameNonEmpty) {
-          autoPromoteIfIdle();
-        }
+        if (justBecameNonEmpty) autoPromoteIfIdle();
         prevQueueCount = items.length;
       });
       unsub=()=>off();
@@ -491,7 +477,7 @@
       log("Queue cleared and overlay reset to placeholder.");
     };
 
-    // ---- Streamlabs connect (optional) ----
+    /* ---- Streamlabs connect (optional) ---- */
     let socket;
     $("connectSL").onclick=()=>{
       if(!isLicensed()) return alert("Enter a valid license first.");
@@ -502,7 +488,6 @@
       socket=io("https://sockets.streamlabs.com", { transports:["websocket"], query:{ token }});
       socket.on("connect", ()=>{ log("Streamlabs socket: connected"); $("liveStatus").textContent="Connected to Streamlabs"; });
       socket.on("disconnect", ()=>{ log("Streamlabs socket: disconnected"); $("liveStatus").textContent="Disconnected from Streamlabs"; });
-
       socket.on("event", async (eventData) => {
         console.log("SL raw event:", eventData);
         if (eventData.type !== "donation") return;
@@ -511,15 +496,12 @@
 
         const HEROES = [
           "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America",
-          "Cloak & Dagger","Cloak and Dagger",
-          "Daredevil","Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk",
-          "Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark",
-          "Loki","Luna Snow","Magik","Magneto","Mantis","Mister Fantastic",
-          "Moon Knight","Namor","Peni Parker","Phoenix","Psylocke","The Punisher",
-          "The Thing","Rocket Raccoon","Scarlet Witch","Squirrel Girl",
-          "Spider-Man","Spider Man",
-          "Star-Lord","Star Lord",
-          "Storm","Thor","Ultron","Venom","Winter Soldier","Wolverine"
+          "Cloak & Dagger","Cloak and Dagger","Daredevil","Doctor Strange","Emma Frost","Groot",
+          "Hawkeye","Hela","Hulk","Human Torch","Invisible Woman","Iron Fist","Iron Man",
+          "Jeff the Land Shark","Loki","Luna Snow","Magik","Magneto","Mantis","Mister Fantastic",
+          "Moon Knight","Namor","Peni Parker","Phoenix","Psylocke","The Punisher","The Thing",
+          "Rocket Raccoon","Scarlet Witch","Squirrel Girl","Spider-Man","Spider Man",
+          "Star-Lord","Star Lord","Storm","Thor","Ultron","Venom","Winter Soldier","Wolverine"
         ];
 
         for (const m of msgs) {
@@ -529,25 +511,25 @@
 
           let hero = null;
 
-          // 1) [Hero]
+          // [Hero]
           const b = note.match(/\[([^\]]+)\]/);
           if (b) hero = b[1].trim();
 
-          // 2) request: Hero
+          // "request Thor" or "request: Thor"
           if (!hero) {
             const r = note.match(/request\s*[:\-]?\s*([^\r\n]+)/i);
             if (r) hero = r[1].trim();
           }
 
-          // 3) any known name
+          // contains any hero name
           if (!hero && note) {
             const lc = note.toLowerCase();
             const hit = HEROES.find(h => lc.includes(h.toLowerCase()));
             if (hit) hero = hit;
           }
 
-          // 4) fallback: lastClicks (for non-anonymous donors)
-          if (!hero && name && name.toLowerCase() !== "anonymous") {
+          // lastClicks fallback (for real donors or Streamlabs test = "streamlabs")
+          if (!hero && name) {
             try {
               const donorKey = name.toLowerCase();
               const lcSnap = await get(ref(db, `/channels/${cid()}/lastClicks/${donorKey}`));
@@ -571,59 +553,14 @@
       });
     };
 
-    // Debug panel (unchanged)
+    /* Debug panel */
     $("statusCard").querySelector(".pill").addEventListener("click",(e)=>{ if(e.shiftKey){ $("debugPanel").classList.toggle("hidden"); updateDbg(); }});
     $("dbgRefresh").onclick=()=>resubscribeQueue();
     $("dbgClearLS").onclick=()=>{ localStorage.removeItem(CFG_KEY); localStorage.removeItem(PKR_KEY); localStorage.removeItem(LICENSE_KEY); showToast("Local storage cleared"); location.reload(); };
     function updateDbg(){ $("dbgInfo").textContent=`Path: /channels/${cid()}/ *  | Licensed: ${isLicensed()}`; }
 
-    // Initial subscribe
+    /* Initial subscribe */
     resubscribeQueue();
-  </script>
-
-  <!-- Firebase listener (compat for any legacy helpers you were using) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
-  <script>
-    const firebaseConfigCompat = {
-      apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
-      authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
-      databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
-      projectId: "marvel-rivals-overlay-7f867",
-      storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
-      messagingSenderId: "1078364810175",
-      appId: "1:1078364810175:web:fac410007b70b65e348f0a"
-    };
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfigCompat);
-
-    // Minimal global debug helpers (safe; channel resolves from saved license or 'demo')
-    (function(){
-      const lic = JSON.parse(localStorage.getItem("mr_license")||"null");
-      const CH  = (lic && lic.channel) ? lic.channel : "demo";
-
-      window.peekQueue = async () => {
-        try {
-          const snap = await firebase.database().ref(`/channels/${CH}/queue`).get();
-          console.log("📦 Queue data:", snap.val());
-        } catch (e) { console.warn(e); }
-      };
-
-      window.peekCurrent = async () => {
-        try {
-          const snap = await firebase.database().ref(`/channels/${CH}/current`).get();
-          console.log("🎯 Current data:", snap.val());
-        } catch (e) { console.warn(e); }
-      };
-
-      window.pushTest = async (hero = "Thor", donor = "TestUser") => {
-        try {
-          const res = await firebase.database().ref(`/channels/${CH}/queue`).push({
-            hero, donor, amount: 5, ts: Date.now()
-          });
-          console.log("✅ Pushed hero:", hero, "by", donor, "→ key:", res.key);
-        } catch (e) { console.warn(e); }
-      };
-    })();
   </script>
 </body>
 </html>
