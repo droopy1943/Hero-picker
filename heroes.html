@@ -1,108 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Pick Your Hero</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  body {
-    background: #0b0b0f;
-    color: #f5f7fa;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    margin: 0;
-    text-align: center;
-  }
-  h1 { margin: 24px 0 12px; font-size: 26px; }
-  .hero-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 14px;
-    padding: 20px;
-    max-width: 960px;
-    margin: auto;
-  }
-  .hero-card {
-    background: #11121a;
-    border: 1px solid #2a2e3e;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-    padding: 10px;
-  }
-  .hero-card:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(230,36,41,0.4);
-  }
-  img { width: 100%; border-radius: 8px; }
-  p { margin: 6px 0 0; font-size: 15px; color: #cbd5e1; }
-</style>
+  <meta charset="UTF-8" />
+  <title>Pick Your Hero</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b0b0f; color:#f5f7fa; margin:0; text-align:center; }
+    h1 { margin: 24px 0 12px; font-size: 26px; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:14px; padding:20px; max-width:960px; margin:0 auto 28px; }
+    .card { background:#11121a; border:1px solid #2a2e3e; border-radius:10px; padding:10px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
+    .card:hover { transform:scale(1.05); box-shadow:0 0 14px rgba(230,36,41,.35); }
+    .card img { width:100%; height:auto; border-radius:8px; display:block; }
+    .name { margin:6px 0 0; font-size:15px; color:#cbd5e1; }
+  </style>
 </head>
 <body>
+  <h1>Pick Your Hero!</h1>
+  <div class="grid" id="heroGrid"></div>
 
-<h1>Pick Your Hero!</h1>
-<p>Amount is preset to $5 — no message required.</p>
-
-<div class="hero-grid" id="heroGrid"></div>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
-<script>
-  // ---- Firebase Config ----
-  const firebaseConfig = {
-    apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
-    authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
-    databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
-    projectId: "marvel-rivals-overlay-7f867",
-    storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
-    messagingSenderId: "1078364810175",
-    appId: "1:1078364810175:web:fac410007b70b65e348f0a"
-  };
-  firebase.initializeApp(firebaseConfig);
-  firebase.auth().signInAnonymously().catch(console.warn);
-
-  const params = new URLSearchParams(location.search);
-  const CHANNEL = params.get("channel") || "demo";
-  const USER = params.get("user") || CHANNEL;
-
-  console.log("Channel =", CHANNEL, "| User =", USER);
-
-  const HEROES = [
-    "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America",
-    "Cloak & Dagger","Daredevil","Doctor Strange","Emma Frost","Groot","Hawkeye",
-    "Hela","Hulk","Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark",
-    "Loki","Luna Snow","Magik","Magneto","Mantis","Mister Fantastic","Moon Knight","Namor",
-    "Peni Parker","Phoenix","Psylocke","The Punisher","The Thing","Rocket Raccoon",
-    "Scarlet Witch","Squirrel Girl","Spider-Man","Star-Lord","Storm","Thor","Ultron",
-    "Venom","Winter Soldier","Wolverine"
-  ];
-
-  const grid = document.getElementById("heroGrid");
-
-  HEROES.forEach(hero => {
-    const card = document.createElement("div");
-    card.className = "hero-card";
-    card.innerHTML = `
-      <img src="https://droopy1943.github.io/Hero-picker/img/${encodeURIComponent(hero)}.webp" alt="${hero}">
-      <p>${hero}</p>`;
-    card.onclick = async () => {
-      try {
-        // Save the hero click for fallback parsing
-        await firebase.database()
-          .ref(`/channels/${CHANNEL}/lastClicks/streamlabs`)
-          .set({ hero, ts: Date.now() });
-        console.log("✅ Saved lastClick for", hero);
-
-        // Open Streamlabs tip page (no message typing required)
-        const tipUrl = `https://streamlabs.com/${encodeURIComponent(USER)}/tip?amount=5&message=${encodeURIComponent(hero)}`;
-        window.open(tipUrl, "_blank");
-      } catch (err) {
-        console.error("❌ Failed to save lastClick:", err);
-        alert("Could not connect to the database. Try refreshing or picking again.");
-      }
+  <!-- Firebase (compat for simple drop-in) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
+  <script>
+    // ---- Firebase config (same as queue/overlay) ----
+    const firebaseConfig = {
+      apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
+      authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
+      databaseURL: "https://marvel-rivals-overlay-7f867-default-rtdb.firebaseio.com",
+      projectId: "marvel-rivals-overlay-7f867",
+      storageBucket: "marvel-rivals-overlay-7f867.appspot.com",
+      messagingSenderId: "1078364810175",
+      appId: "1:1078364810175:web:fac410007b70b65e348f0a"
     };
-    grid.appendChild(card);
-  });
-</script>
+    firebase.initializeApp(firebaseConfig);
+    firebase.auth().signInAnonymously().catch(console.warn);
+
+    // ---- URL params ----
+    const params  = new URLSearchParams(location.search);
+    const CHANNEL = params.get("channel") || "demo";      // DB channel path
+    const USER    = params.get("user") || CHANNEL;        // Streamlabs username
+
+    // ---- Hero list (filenames must match your /images/*.png exactly) ----
+    const HEROES = [
+      "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America",
+      "Cloak & Dagger","Daredevil","Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk",
+      "Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark","Loki","Luna Snow",
+      "Magik","Magneto","Mantis","Mister Fantastic","Moon Knight","Namor","Peni Parker","Phoenix",
+      "Psylocke","The Punisher","The Thing","Rocket Raccoon","Scarlet Witch","Squirrel Girl",
+      "Spider-Man","Star-Lord","Storm","Thor","Ultron","Venom","Winter Soldier","Wolverine"
+    ];
+
+    const grid = document.getElementById("heroGrid");
+
+    // Build cards
+    HEROES.forEach(name => {
+      const card = document.createElement("div");
+      card.className = "card";
+      // IMPORTANT: uses local images/*.png (the names above must match exactly)
+      const imgSrc = `images/${name}.png`;
+      card.innerHTML = `<img src="${imgSrc}" alt="${name}"><div class="name">${name}</div>`;
+
+      card.onclick = async () => {
+        try {
+          // Save last click so donations without text still parse
+          await firebase.database()
+            .ref(`/channels/${CHANNEL}/lastClicks/streamlabs`)
+            .set({ hero: name, ts: Date.now() });
+
+          // Open Streamlabs tip. Message not required anymore, but keeping brackets improves robustness.
+          const tipUrl = `https://streamlabs.com/${encodeURIComponent(USER)}/tip?amount=5&message=${encodeURIComponent('[' + name + ']')}`;
+          window.open(tipUrl, "_blank");
+        } catch (e) {
+          console.error("lastClicks write failed:", e);
+          alert("Couldn’t save your pick. Refresh and try again.");
+        }
+      };
+
+      grid.appendChild(card);
+    });
+  </script>
 </body>
 </html>
