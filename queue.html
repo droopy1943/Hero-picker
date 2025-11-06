@@ -206,7 +206,6 @@
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
   <script type="module">
-    // ===== MODULE SCRIPT (keeps everything neat and working) =====
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getDatabase, ref, onValue, get, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -216,7 +215,7 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
     const auth = getAuth(app);
-    await signInAnonymously(auth);
+    await signInAnonymously(auth); // ensures we have auth.uid for session allowlist
 
     // --- Helpers / refs ---
     const $=id=>document.getElementById(id);
@@ -278,40 +277,52 @@
       if(!ss.exists()) await set(ref(db, `/channels/${ch}/settings`), {});
     }
 
-    // STRICT license verify (unchanged except for auto-reload)
+    // STRICT license verify (with session allowlist; NO reload)
+    let __verifying = false;
     async function verifyLicense(manual=false){
+      if (__verifying) return false;
+      __verifying = true;
+
       const key=licenseKeyInput.value.trim(), ch=licenseChannelInput.value.trim();
       if(!key||!ch){
         licenseMsg.textContent="⚠️ Please enter both fields."; licenseMsg.className="license-msg bad";
-        statusPill.textContent="Unlicensed"; statusPill.className="status-pill bad"; lockAll(true); return false;
+        statusPill.textContent="Unlicensed"; statusPill.className="status-pill bad"; lockAll(true); __verifying=false; return false;
       }
       try{
         const snap=await get(ref(db, `/channels/${ch}/licenses/${key}`));
         const val=snap.val();
         if(val && (val.active===true || val.valid===true)){
+          // Save license locally
           localStorage.setItem(LICENSE_KEY, JSON.stringify({ key, channel: ch }));
+
+          // Mark this anonymous session as allowed (matches your rules)
+          const uid = (await auth.currentUser)?.uid;
+          if (uid) {
+            await set(ref(db, `/channels/${ch}/sessions/${uid}`), true);
+          }
+
+          // UI unlock
           statusPill.textContent="Licensed"; statusPill.className="status-pill good";
           licenseMsg.textContent=(val.assignedTo?`Licensed for ${val.assignedTo}`:"");
           licenseMsg.className="license-msg good";
           $("resetLicense").classList.remove("hidden");
           $("licenseCard").classList.add("hidden");
           lockAll(false);
+
           setOverlayUrl(); setViewerLink();
           await ensurePaths(ch);
           resubscribeQueue();
 
-          // ✅ Auto-reload to avoid the "gray UI until refresh" race
-          setTimeout(() => location.reload(), 150);
-
+          __verifying=false;
           return true;
         } else {
           licenseMsg.textContent="❌ Invalid or inactive key."; licenseMsg.className="license-msg bad";
-          statusPill.textContent="Unlicensed"; statusPill.className="status-pill bad"; lockAll(true); return false;
+          statusPill.textContent="Unlicensed"; statusPill.className="status-pill bad"; lockAll(true); __verifying=false; return false;
         }
       }catch(e){
         console.error("License verify error:",e);
         licenseMsg.textContent="⚠️ Network error — try again."; licenseMsg.className="license-msg bad";
-        statusPill.textContent="Unlicensed"; statusPill.className="status-pill bad"; lockAll(true); return false;
+        statusPill.textContent="Unlicensed"; statusPill.className="status-pill bad"; lockAll(true); __verifying=false; return false;
       }
     }
 
@@ -326,6 +337,7 @@
 
     (async()=>{
       lockAll(true);
+      // If we have a saved license, auto-verify once (no reload loop)
       if(savedLic?.key&&savedLic?.channel){
         licenseKeyInput.value=savedLic.key;
         licenseChannelInput.value=savedLic.channel;
@@ -378,7 +390,6 @@
     let autoPromoteBusy = false;
     let prevQueueCount = 0;
 
-    // Keep a live copy of current
     onValue(curRef(), (snap) => {
       currentState = snap.val() || null;
     });
@@ -398,7 +409,6 @@
       autoPromoteBusy = true;
       try {
         const first = latestQueueItems[0];
-        // Show on overlay but KEEP it in the queue
         await set(curRef(), {
           hero: first.hero,
           donor: first.donor || "",
@@ -413,7 +423,6 @@
       }
     }
 
-    // ---- Queue subscribe & render ----
     let unsub=null;
     function resubscribeQueue(){
       if(unsub) unsub();
@@ -422,11 +431,9 @@
         const items=Object.entries(obj).map(([key,val])=>({key, ...(val||{})}));
         items.sort((a,b)=>(a.ts||0)-(b.ts||0));
 
-        // store items
         latestQueueItems = items;
         renderQueue(items);
 
-        // Only auto-show when queue transitions from empty → non-empty
         const justBecameNonEmpty = (prevQueueCount === 0 && items.length > 0);
         if (justBecameNonEmpty) {
           autoPromoteIfIdle();
@@ -486,73 +493,63 @@
       socket.on("connect", ()=>{ log("Streamlabs socket: connected"); $("liveStatus").textContent="Connected to Streamlabs"; });
       socket.on("disconnect", ()=>{ log("Streamlabs socket: disconnected"); $("liveStatus").textContent="Disconnected from Streamlabs"; });
       socket.on("event", async (eventData) => {
-  console.log("SL raw event:", eventData);
-  if (eventData.type !== "donation") return;
+        console.log("SL raw event:", eventData);
+        if (eventData.type !== "donation") return;
 
-  const msgs = Array.isArray(eventData.message) ? eventData.message : [eventData.message];
+        const msgs = Array.isArray(eventData.message) ? eventData.message : [eventData.message];
+        const HEROES = [
+          "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America",
+          "Cloak & Dagger","Cloak and Dagger","Daredevil","Doctor Strange","Emma Frost","Groot",
+          "Hawkeye","Hela","Hulk","Human Torch","Invisible Woman","Iron Fist","Iron Man",
+          "Jeff the Land Shark","Loki","Luna Snow","Magik","Magneto","Mantis","Mister Fantastic",
+          "Moon Knight","Namor","Peni Parker","Phoenix","Psylocke","The Punisher","The Thing",
+          "Rocket Raccoon","Scarlet Witch","Squirrel Girl","Spider-Man","Spider Man",
+          "Star-Lord","Star Lord","Storm","Thor","Ultron","Venom","Winter Soldier","Wolverine"
+        ];
 
-  const HEROES = [
-  "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America",
-  "Cloak & Dagger","Cloak and Dagger",
-  "Daredevil",
-  "Doctor Strange","Emma Frost","Groot","Hawkeye","Hela","Hulk",
-  "Human Torch","Invisible Woman","Iron Fist","Iron Man","Jeff the Land Shark",
-  "Loki","Luna Snow","Magik","Magneto","Mantis","Mister Fantastic",
-  "Moon Knight","Namor","Peni Parker","Phoenix","Psylocke","The Punisher",
-  "The Thing","Rocket Raccoon","Scarlet Witch","Squirrel Girl",
-  "Spider-Man","Spider Man",
-  "Star-Lord","Star Lord",
-  "Storm","Thor","Ultron","Venom","Winter Soldier","Wolverine"
-];
+        for (const m of msgs) {
+          const name   = (m?.name || "Anonymous").trim();
+          const amount = Number(m?.amount || m?.formatted_amount || 0);
+          const note   = String(m?.message || m?.msg || m?.note || "").trim();
 
-  for (const m of msgs) {
-    const name   = (m?.name || "Anonymous").trim();
-    const amount = Number(m?.amount || m?.formatted_amount || 0);
-    const note   = String(m?.message || m?.msg || m?.note || "").trim();
+          let hero = null;
 
-    let hero = null;
+          const b = note.match(/\[([^\]]+)\]/);
+          if (b) hero = b[1].trim();
 
-    // 1) Brackets: [Cloak & Dagger]
-    const b = note.match(/\[([^\]]+)\]/);
-    if (b) hero = b[1].trim();
+          if (!hero) {
+            const r = note.match(/request\s*[:\-]?\s*([^\r\n]+)/i);
+            if (r) hero = r[1].trim();
+          }
 
-    // 2) "request Thor" or "request: Thor"
-    if (!hero) {
-      const r = note.match(/request\s*[:\-]?\s*([^\r\n]+)/i);
-      if (r) hero = r[1].trim();
-    }
+          if (!hero && note) {
+            const lc = note.toLowerCase();
+            const hit = HEROES.find(h => lc.includes(h.toLowerCase()));
+            if (hit) hero = hit;
+          }
 
-    // 3) Fallback: detect any hero name inside the note
-    if (!hero && note) {
-      const lc = note.toLowerCase();
-      const hit = HEROES.find(h => lc.includes(h.toLowerCase()));
-      if (hit) hero = hit;
-    }
+          if (!hero && name && name.toLowerCase() !== "anonymous") {
+            try {
+              const donorKey = name.toLowerCase();
+              const lcSnap = await get(ref(db, `/channels/${cid()}/lastClicks/${donorKey}`));
+              const lcVal = lcSnap.val();
+              if (lcVal && lcVal.hero && (Date.now() - (lcVal.ts || 0) < 10 * 60 * 1000)) {
+                hero = lcVal.hero;
+              }
+            } catch (e) {
+              console.warn("lastClicks lookup failed:", e);
+            }
+          }
 
-    // 4) Ultimate fallback: match by donor name against last click saved by heroes.html
-    if (!hero && name && name.toLowerCase() !== "anonymous") {
-      try {
-        const donorKey = name.toLowerCase();
-        const lcSnap = await get(ref(db, `/channels/${cid()}/lastClicks/${donorKey}`));
-        const lcVal = lcSnap.val();
-        if (lcVal && lcVal.hero && (Date.now() - (lcVal.ts || 0) < 10 * 60 * 1000)) {
-          hero = lcVal.hero;
+          if (!hero) {
+            log(`Donation received but no hero parsed (name="${name}", note="${note}")`);
+            continue;
+          }
+
+          await push(qRef(), { hero, donor: name, amount, ts: Date.now() });
+          log(`Donation queued: ${hero} by ${name} ($${amount})`);
         }
-      } catch (e) {
-        console.warn("lastClicks lookup failed:", e);
-      }
-    }
-
-    if (!hero) {
-      log(`Donation received but no hero parsed (name="${name}", note="${note}")`);
-      continue;
-    }
-
-    await push(qRef(), { hero, donor: name, amount, ts: Date.now() });
-    log(`Donation queued: ${hero} by ${name} ($${amount})`);
-  }
-});
-
+      });
     };
 
     // Debug panel (unchanged)
@@ -569,7 +566,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
 <script>
-  // 1) Init Firebase (your config)
   const firebaseConfig = {
     apiKey: "AIzaSyASjfLh3w3UQHRy1wvmWwD5ZfaXWjVYTnE",
     authDomain: "marvel-rivals-overlay-7f867.firebaseapp.com",
@@ -582,100 +578,31 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // 2) get channel from ?channel=... or default to "droopy"
   function getParam(name){
     const u = new URLSearchParams(location.search);
     return u.get(name);
   }
   const channel = getParam('channel') || 'droopy';
 
-  // 3) live-subscribe to /current and drive your existing newDonation()
   const curRef = db.ref(`/channels/${channel}/current`);
   curRef.on('value', (snap) => {
     const val = snap.val();
     if (!val || !val.hero) return;
-    // Your existing function signature: newDonation(donor, amount, heroName)
     newDonation(val.donor || "", val.amount || "", val.hero);
   });
-  // === DEBUG HELPERS — append-only ===
-window.peekQueue = async () => {
-  const snap = await get(qRef());
-  console.log("Queue @", `/channels/${cid()}/queue`, "=", snap.val());
-};
 
-window.pushTest = async (hero = "Thor", donor = "TestUser") => {
-  const res = await push(qRef(), { hero, donor, amount: 5, ts: Date.now() });
-  console.log("Pushed:", hero, "by", donor, "key:", res.key);
-  return res.key;
-};
-
-window.peekCurrent = async () => {
-  const snap = await get(curRef());
-  console.log("Current @", `/channels/${cid()}/current`, "=", snap.val());
-};
-
-</script>
-<script>
-  // Expose Firebase debug helpers globally
+  // DEBUG HELPERS (leave as-is)
   window.peekQueue = async () => {
-    const app = firebase.app();
-    const db = firebase.database(app);
-    const path = `/channels/demo/queue`; // or replace 'demo' with your channel ID
-    const snap = await db.ref(path).get();
+    const snap = await firebase.database().ref(`/channels/${channel}/queue`).get();
     console.log("Queue:", snap.val());
   };
-
   window.peekCurrent = async () => {
-    const app = firebase.app();
-    const db = firebase.database(app);
-    const path = `/channels/demo/current`;
-    const snap = await db.ref(path).get();
+    const snap = await firebase.database().ref(`/channels/${channel}/current`).get();
     console.log("Current:", snap.val());
   };
-
   window.pushTest = async (hero = "Thor", donor = "TestUser") => {
-    const app = firebase.app();
-    const db = firebase.database(app);
-    const path = `/channels/demo/queue`;
-    const res = await db.ref(path).push({ hero, donor, amount: 5, ts: Date.now() });
+    const res = await firebase.database().ref(`/channels/${channel}/queue`).push({ hero, donor, amount: 5, ts: Date.now() });
     console.log("Pushed:", hero, "by", donor, "→ key:", res.key);
-  };
-</script>
-<script>
-  // Expose Firebase debug helpers globally
-  window.peekQueue = async () => {
-    const app = firebase.app();
-    const db = firebase.database(app);
-    const channel = localStorage.getItem("mr_license")
-      ? JSON.parse(localStorage.getItem("mr_license")).channel
-      : "demo";
-    const snap = await db.ref(`/channels/${channel}/queue`).get();
-    console.log("📦 Queue data:", snap.val());
-  };
-
-  window.peekCurrent = async () => {
-    const app = firebase.app();
-    const db = firebase.database(app);
-    const channel = localStorage.getItem("mr_license")
-      ? JSON.parse(localStorage.getItem("mr_license")).channel
-      : "demo";
-    const snap = await db.ref(`/channels/${channel}/current`).get();
-    console.log("🎯 Current data:", snap.val());
-  };
-
-  window.pushTest = async (hero = "Thor", donor = "TestUser") => {
-    const app = firebase.app();
-    const db = firebase.database(app);
-    const channel = localStorage.getItem("mr_license")
-      ? JSON.parse(localStorage.getItem("mr_license")).channel
-      : "demo";
-    const res = await db.ref(`/channels/${channel}/queue`).push({
-      hero,
-      donor,
-      amount: 5,
-      ts: Date.now(),
-    });
-    console.log("✅ Pushed hero:", hero, "by", donor, "→ key:", res.key);
   };
 </script>
 
