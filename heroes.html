@@ -62,20 +62,25 @@
       card.innerHTML = `<img src="${imgSrc}" alt="${name}"><div class="name">${name}</div>`;
 
       card.onclick = async () => {
-        try {
-          // Save last click so donations without text still parse
-          await firebase.database()
-            .ref(`/channels/${CHANNEL}/lastClicks/streamlabs`)
-            .set({ hero: name, ts: Date.now() });
+  // Always open Streamlabs immediately
+  const heroName = name;
+  const msg = `[${heroName}]`; // keep brackets if your parser expects them
+  const tipUrl = `https://streamlabs.com/${encodeURIComponent(USER)}/tip?amount=5&message=${encodeURIComponent(msg)}`;
+  window.open(tipUrl, "_blank");
 
-          // Open Streamlabs tip. Message not required anymore, but keeping brackets improves robustness.
-          const tipUrl = `https://streamlabs.com/${encodeURIComponent(USER)}/tip?amount=5&message=${encodeURIComponent('[' + name + ']')}`;
-          window.open(tipUrl, "_blank");
-        } catch (e) {
-          console.error("lastClicks write failed:", e);
-          alert("Couldn’t save your pick. Refresh and try again.");
-        }
-      };
+  // Copy hero name as a safety net (if Streamlabs clears the message)
+  try { await navigator.clipboard.writeText(msg); } catch (e) {}
+
+  // lastClicks is optional—do NOT punish the viewer if it fails
+  try {
+    await firebase.database()
+      .ref(`/channels/${CHANNEL}/lastClicks/streamlabs`)
+      .set({ hero: heroName, ts: Date.now() });
+  } catch (e) {
+    console.warn("lastClicks write failed (non-fatal):", e);
+  }
+};
+
 
       grid.appendChild(card);
     });
