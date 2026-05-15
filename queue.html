@@ -534,58 +534,128 @@ function setViewerLink(){ const ch=cid(), slUser=(slUserInput.value||"").trim(),
         if (eventData.type !== "donation") return;
 
         const msgs = Array.isArray(eventData.message) ? eventData.message : [eventData.message];
-        const HEROES = [
-          "Adam Warlock","Angela","Black Panther","Black Widow","Blade","Captain America",
-          "Cloak & Dagger","Cloak and Dagger","Daredevil","Doctor Strange","Emma Frost","Groot",
-          "Hawkeye","Hela","Hulk","Human Torch","Invisible Woman","Iron Fist","Iron Man",
-          "Jeff the Land Shark","Loki","Luna Snow","Magik","Magneto","Mantis","Mister Fantastic",
-          "Moon Knight","Namor","Peni Parker","Phoenix","Psylocke","The Punisher","The Thing",
-          "Rocket Raccoon","Scarlet Witch","Squirrel Girl","Spider-Man","Spider Man",
-          "Star-Lord","Star Lord","Storm","Thor","Ultron","Venom","Winter Soldier","Wolverine"
-        ];
+        const HERO_ALIASES = {
+  "Adam Warlock": ["adam warlock", "adamwarlock"],
+  "Angela": ["angela"],
+  "Black Cat": ["black cat", "blackcat"],
+  "Black Panther": ["black panther", "blackpanther"],
+  "Black Widow": ["black widow", "blackwidow", "widow"],
+  "Blade": ["blade"],
+  "Captain America": ["captain america", "captainamerica", "cap"],
+  "Cloak & Dagger": ["cloak & dagger", "cloak and dagger", "cloak dagger", "cloakanddagger"],
+  "Cyclops": ["cyclops"],
+  "Daredevil": ["daredevil", "dare devil"],
+  "Deadpool": ["deadpool", "dead pool"],
+  "Devil Dinosaur": ["devil dinosaur", "devildinosaur"],
+  "Doctor Strange": ["doctor strange", "doctorstrange", "dr strange", "drstrange", "strange"],
+  "Elsa Bloodstone": ["elsa bloodstone", "elsabloodstone", "elsa"],
+  "Emma Frost": ["emma frost", "emmafrost", "emma"],
+  "Gambit": ["gambit"],
+  "Groot": ["groot"],
+  "Hawkeye": ["hawkeye", "hawk eye"],
+  "Hela": ["hela"],
+  "Hulk": ["hulk"],
+  "Human Torch": ["human torch", "humantorch", "torch"],
+  "Invisible Woman": ["invisible woman", "invisiblewoman", "sue storm"],
+  "Iron Fist": ["iron fist", "ironfist"],
+  "Iron Man": ["iron man", "ironman", "tony stark"],
+  "Jeff the Land Shark": ["jeff the land shark", "jeffthelandshark", "jeff"],
+  "Loki": ["loki"],
+  "Luna Snow": ["luna snow", "lunasnow", "luna"],
+  "Magik": ["magik", "magic"],
+  "Magneto": ["magneto"],
+  "Mantis": ["mantis"],
+  "Mister Fantastic": ["mister fantastic", "mrfantastic", "mr fantastic", "misterfantastic", "reed richards"],
+  "Moon Knight": ["moon knight", "moonknight"],
+  "Namor": ["namor"],
+  "Peni Parker": ["peni parker", "peniparker", "peni"],
+  "Phoenix": ["phoenix", "jean grey"],
+  "Psylocke": ["psylocke"],
+  "Rocket Raccoon": ["rocket raccoon", "rocketraccoon", "rocket"],
+  "Rogue": ["rogue"],
+  "Scarlet Witch": ["scarlet witch", "scarletwitch", "wanda"],
+  "Squirrel Girl": ["squirrel girl", "squirrelgirl"],
+  "Spider-Man": ["spider-man", "spider man", "spiderman", "spidey"],
+  "Star-Lord": ["star-lord", "star lord", "starlord", "peter quill"],
+  "Storm": ["storm"],
+  "The Punisher": ["the punisher", "punisher"],
+  "The Thing": ["the thing", "thing", "ben grimm"],
+  "Thor": ["thor"],
+  "Ultron": ["ultron"],
+  "Venom": ["venom"],
+  "White Fox": ["white fox", "whitefox"],
+  "Winter Soldier": ["winter soldier", "wintersoldier", "bucky"],
+  "Wolverine": ["wolverine", "logan"]
+};
 
-        for (const m of msgs) {
-          const name   = (m?.name || "Anonymous").trim();
-          const amount = Number(m?.amount || m?.formatted_amount || 0);
-          const note   = String(m?.message || m?.msg || m?.note || "").trim();
+function normalizeHeroText(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[\[\]().,!?:;"']/g, " ")
+    .replace(/&/g, " and ")
+    .replace(/-/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-          let hero = null;
+function compactHeroText(text) {
+  return normalizeHeroText(text).replace(/\s+/g, "");
+}
 
-          const b = note.match(/\[([^\]]+)\]/);
-          if (b) hero = b[1].trim();
+function findHeroFromText(text) {
+  const normal = normalizeHeroText(text);
+  const compact = compactHeroText(text);
 
-          if (!hero) {
-            const r = note.match(/request\s*[:\-]?\s*([^\r\n]+)/i);
-            if (r) hero = r[1].trim();
-          }
+  for (const [hero, aliases] of Object.entries(HERO_ALIASES)) {
+    for (const alias of aliases) {
+      const aliasNormal = normalizeHeroText(alias);
+      const aliasCompact = compactHeroText(alias);
 
-          if (!hero && note) {
-            const lc = note.toLowerCase();
-            const hit = HEROES.find(h => lc.includes(h.toLowerCase()));
-            if (hit) hero = hit;
-          }
+      if (normal.includes(aliasNormal) || compact.includes(aliasCompact)) {
+        return hero;
+      }
+    }
+  }
 
-          if (!hero && name && name.toLowerCase() !== "anonymous") {
-            try {
-              const donorKey = name.toLowerCase();
-              const lcSnap = await get(ref(db, `/channels/${cid()}/lastClicks/${donorKey}`));
-              const lcVal = lcSnap.val();
-              if (lcVal && lcVal.hero && (Date.now() - (lcVal.ts || 0) < 10 * 60 * 1000)) {
-                hero = lcVal.hero;
-              }
-            } catch (e) {
-              console.warn("lastClicks lookup failed:", e);
-            }
-          }
+  return null;
+}
 
-          if (!hero) {
-            log(`Donation received but no hero parsed (name="${name}", note="${note}")`);
-            continue;
-          }
+for (const m of msgs) {
+  const name   = (m?.name || "Anonymous").trim();
+  const amount = Number(m?.amount || m?.formatted_amount || 0);
+  const note   = String(m?.message || m?.msg || m?.note || "").trim();
 
-          await push(qRef(), { hero, donor: name, amount, ts: Date.now() });
-          log(`Donation queued: ${hero} by ${name} ($${amount})`);
-        }
+  let hero = null;
+
+  // PRIMARY: parse hero from donation message using aliases
+  if (note) {
+    hero = findHeroFromText(note);
+  }
+
+  // FALLBACK: if no hero in message, use most recent hero picker click
+  if (!hero) {
+    try {
+      const lcSnap = await get(ref(db, `/channels/${cid()}/lastClicks/streamlabs`));
+      const lcVal = lcSnap.val();
+
+      // Only trust recent clicks within 2 minutes
+      if (lcVal && lcVal.hero && (Date.now() - (lcVal.ts || 0) < 2 * 60 * 1000)) {
+        hero = lcVal.hero;
+        log(`Used recent hero click fallback: ${hero}`);
+      }
+    } catch (e) {
+      console.warn("lastClicks fallback failed:", e);
+    }
+  }
+
+  if (!hero) {
+    log(`Donation received but no hero parsed (name="${name}", note="${note}")`);
+    continue;
+  }
+
+  await push(qRef(), { hero, donor: name, amount, ts: Date.now() });
+  log(`Donation queued: ${hero} by ${name} ($${amount})`);
+}
       });
     };
 
