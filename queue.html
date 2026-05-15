@@ -500,23 +500,37 @@ function setViewerLink(){ const ch=cid(), slUser=(slUserInput.value||"").trim(),
     };
 
     $("nextHero").onclick=async()=>{
-      if(!isLicensed()) return alert("Enter a valid license first.");
-      const snap=await get(qRef()); const obj=snap.val(); if(!obj) return alert("Queue empty.");
-      const entries=Object.entries(obj).map(([k,v])=>({k,v}));
-      entries.sort((a,b)=>(a.v?.ts||0)-(b.v?.ts||0));
-      const first=entries[0]; if(!first) return;
-      await set(curRef(), first.v);
-      await remove(ref(db, `/channels/${cid()}/queue/${first.k}`));
-      log(`Sent to overlay: ${first.v.hero}${first.v.donor?` by ${first.v.donor}`:""}`);
-    };
+  if(!isLicensed()) return alert("Enter a valid license first.");
 
-    $("clearQueue").onclick=async()=>{
-      if(!isLicensed()) return alert("Enter a valid license first.");
-      if(!confirm("Clear ALL items from the queue?")) return;
-      await remove(qRef());
-      await set(curRef(), { hero:"Pick a Hero", donor:"", amount:"" });
-      log("Queue cleared and overlay reset to placeholder.");
-    };
+  const snap = await get(qRef());
+  const obj = snap.val();
+  if(!obj) return alert("Queue empty.");
+
+  const entries = Object.entries(obj).map(([k,v])=>({k,v}));
+  entries.sort((a,b)=>(a.v?.ts||0)-(b.v?.ts||0));
+
+  const currentHero = (currentState?.hero || "").trim();
+
+  // If the first queued item is already showing, remove it and advance to the next one
+  if (entries[0]?.v?.hero === currentHero) {
+    await remove(ref(db, `/channels/${cid()}/queue/${entries[0].k}`));
+    entries.shift();
+  }
+
+  // If there is another hero, show it and remove it from queue
+  if (entries.length > 0) {
+    const next = entries[0];
+
+    await set(curRef(), next.v);
+    await remove(ref(db, `/channels/${cid()}/queue/${next.k}`));
+
+    log(`Sent to overlay: ${next.v.hero}${next.v.donor ? ` by ${next.v.donor}` : ""}`);
+    return;
+  }
+
+  // If nothing is left, keep the current hero on overlay
+  log("Queue empty. Overlay left on current hero.");
+};
 
     // ---- Streamlabs connect (optional) ----
     let socket;
