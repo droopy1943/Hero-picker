@@ -507,6 +507,13 @@ function setViewerLink(){ const ch=cid(), slUser=(slUserInput.value||"").trim(),
       const first=entries[0]; if(!first) return;
       await set(curRef(), first.v);
       await remove(ref(db, `/channels/${cid()}/queue/${first.k}`));
+      const remainingSnap = await get(qRef());
+const remainingObj = remainingSnap.val();
+
+if (!remainingObj || Object.keys(remainingObj).length === 0) {
+  await set(curRef(), { hero:"Pick a Hero", donor:"", amount:"" });
+  log("Queue ended and overlay reset to placeholder.");
+}
       log(`Sent to overlay: ${first.v.hero}${first.v.donor?` by ${first.v.donor}`:""}`);
     };
 
