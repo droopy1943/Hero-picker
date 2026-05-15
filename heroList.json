@@ -2,6 +2,7 @@
   "heroes": [
     { "name": "Adam Warlock", "file": "Adam Warlock.png" },
     { "name": "Angela", "file": "Angela.png" },
+    { "name": "Black Cat", "file": "Black Cat.png" },
     { "name": "Black Panther", "file": "Black Panther.png" },
     { "name": "Black Widow", "file": "Black Widow.png" },
     { "name": "Blade", "file": "Blade.png" },
@@ -9,7 +10,9 @@
     { "name": "Cloak & Dagger", "file": "Cloak & Dagger.png" },
     { "name": "Daredevil", "file": "Daredevil.png" },
     { "name": "Deadpool", "file": "Deadpool.png" },
+    { "name": "Devil Dinosaur", "file": "Devil Dinosaur.png" },
     { "name": "Doctor Strange", "file": "Doctor Strange.png" },
+    { "name": "Elsa Bloodstone", "file": "Elsa Bloodstone.png" },
     { "name": "Emma Frost", "file": "Emma Frost.png" },
     { "name": "Gambit", "file": "Gambit.png" },
     { "name": "Groot", "file": "Groot.png" },
@@ -44,6 +47,7 @@
     { "name": "Thor", "file": "Thor.png" },
     { "name": "Ultron", "file": "Ultron.png" },
     { "name": "Venom", "file": "Venom.png" },
+    { "name": "White Fox", "file": "White Fox.png" },
     { "name": "Winter Soldier", "file": "Winter Soldier.png" },
     { "name": "Wolverine", "file": "Wolverine.png" }
   ]
